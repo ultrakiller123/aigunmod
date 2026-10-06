@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+minecraft-mod/.gradle/
+minecraft-mod/build/
+minecraft-mod/run/
+dist/

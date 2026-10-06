@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "gmod_live_bridge",
+  "version": "${version}",
+  "name": "GMod Live Bridge",
+  "description": "Receives live Source model geometry and simulation state from Garry's Mod.",
+  "environment": "client",
+  "entrypoints": {"client": ["dev.gmodbridge.BridgeClient"]},
+  "depends": {"fabricloader": ">=0.16.10", "minecraft": "1.21.1", "java": ">=21", "fabric-api": "*"}
+}

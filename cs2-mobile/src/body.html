@@ -1,0 +1,100 @@
+<canvas id="cv"></canvas>
+<div id="touch"></div>
+<div id="stick" hidden><div id="knob"></div></div>
+
+<div id="hud" hidden>
+  <div id="top" class="hud">
+    <div class="side"><div class="sc" id="scT">0</div><div class="pips" id="pipsT"></div><div class="sublbl" id="lblL"></div></div>
+    <div id="clock">1:45</div>
+    <div class="side"><div class="sc" id="scCT">0</div><div class="pips" id="pipsCT"></div><div class="sublbl" id="lblR"></div></div>
+  </div>
+  <canvas id="radar" class="hud"></canvas>
+  <div id="fps" class="hud" hidden></div>
+  <div id="feed" class="hud"></div>
+  <div id="scope" class="hud" hidden></div>
+  <div id="reddot" class="hud" hidden></div>
+  <div id="xh" class="hud"><i class="u"></i><i class="d"></i><i class="l"></i><i class="r"></i><i class="c"></i></div>
+  <div id="hitm" class="hud"></div>
+  <div id="flash" class="hud"></div>
+  <div id="dmg" class="hud"></div>
+  <div id="notice" class="hud"></div>
+  <div id="center" class="hud"><div id="msg"></div><div id="prog" hidden><i></i></div></div>
+  <div id="spec" class="hud" hidden></div>
+  <div id="stats" class="hud">
+    <div class="stat"><b id="hpv">100</b><span>Health</span></div>
+    <div class="stat"><b id="arv">0</b><span>Armor</span></div>
+    <div class="stat" id="money"><b id="mnv">$800</b><span id="mnl">Money</span></div>
+  </div>
+  <div id="ammo" class="hud"><div id="nades"></div><b id="amv">12</b><small id="rsv"> / 24</small><span id="wnv">USP-S</span></div>
+  <div id="flashW" class="hud"></div>
+  <button class="btn touch-only" id="bFire" aria-label="Fire">Fire</button>
+  <button class="btn touch-only" id="bFireL" aria-label="Fire">Fire</button>
+  <button class="btn touch-only" id="bReload">Reload</button>
+  <button class="btn touch-only" id="bSwitch">Pistol</button>
+  <button class="btn touch-only" id="bScope" hidden>Scope</button>
+  <button class="btn touch-only" id="bJump">Jump</button>
+  <button class="btn touch-only" id="bCrouch">Crouch</button>
+  <button class="btn touch-only" id="bNade" hidden>Nade</button>
+  <button class="btn" id="bUse" hidden>Plant</button>
+  <button class="btn" id="bBuy">Buy</button>
+  <button class="btn" id="bPause" aria-label="Pause">II</button>
+  <div id="banner" class="hud" hidden><b id="bnT"></b><span id="bnS"></span><span id="bnM"></span></div>
+</div>
+
+<div id="menu" class="ovl">
+  <div class="mwrap">
+    <h1>Clutch<br><em>Point</em></h1>
+    <p class="sub">First-person tactical shooter against bots. Plant, defuse, or just frag in deathmatch.</p>
+    <div class="tabs" role="tablist">
+      <button data-tab="play" class="sel">Play</button><button data-tab="bots">Bots</button><button data-tab="opts">Settings</button>
+    </div>
+    <div class="pane" data-pane="play">
+      <div class="row"><label>Mode</label><div class="seg" id="optMode">
+        <button data-v="defuse">Defuse</button><button data-v="tdm">Team DM</button><button data-v="ffa">Free-for-all</button>
+      </div></div>
+      <div class="maps" id="maps"></div>
+      <div class="row" id="rowPreset"><label>Preset</label><div class="seg">
+        <button data-preset="1,5">Clutch 1v5</button><button data-preset="1,3">Clutch 1v3</button><button data-preset="5,5">5v5</button><button data-preset="2,2">Wingman</button>
+      </div></div>
+      <div class="row" id="rowSide"><label>Side</label><div class="seg" id="optSide">
+        <button data-v="T" class="cT">Terrorists</button><button data-v="CT" class="cCT">Counter-Terrorists</button>
+      </div></div>
+      <div class="row" id="rowMates"><label>Your team</label><div class="seg" id="optMates"><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button></div></div>
+      <div class="row"><label id="lblFoes">Enemies</label><div class="seg" id="optFoes"><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button><button data-v="7">7</button><button data-v="9">9</button></div></div>
+      <div class="row"><label>Length</label><div class="seg" id="optLen"><button data-v="short">Short</button><button data-v="normal">Normal</button><button data-v="long">Long</button></div><span class="desc" id="lenDesc"></span></div>
+    </div>
+    <div class="pane" data-pane="bots" hidden>
+      <div class="row"><label>Enemy skill</label><div class="seg" id="optDiffE"><button data-v="easy">Easy</button><button data-v="normal">Normal</button><button data-v="hard">Hard</button><button data-v="expert">Expert</button><button data-v="insane">Insane</button></div></div>
+      <div class="row"><label>Team skill</label><div class="seg" id="optDiffA"><button data-v="easy">Easy</button><button data-v="normal">Normal</button><button data-v="hard">Hard</button><button data-v="expert">Expert</button><button data-v="insane">Insane</button></div></div>
+      <p class="desc" id="diffDesc"></p>
+      <div class="row"><label>Play style</label><div class="seg" id="optStyle"><button data-v="passive">Passive</button><button data-v="balanced">Balanced</button><button data-v="aggressive">Aggressive</button></div></div>
+      <div class="row"><label>Loadout</label><div class="seg" id="optLoadout"><button data-v="buy">Buy menu</button><button data-v="pistols">Pistols</button><button data-v="smgs">SMGs &amp; shotguns</button><button data-v="rifles">Rifles</button><button data-v="snipers">Snipers</button><button data-v="knives">Knives</button></div></div>
+      <div class="row"><label>Grenades</label><div class="seg" id="optNades"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
+    </div>
+    <div class="pane" data-pane="opts" hidden>
+      <div class="row"><label>Graphics</label><div class="seg" id="optGfx"><button data-v="low">Low</button><button data-v="med">Medium</button><button data-v="high">High</button></div></div>
+      <p class="desc" id="gfxDesc"></p>
+      <div class="row"><label for="optSens">Look speed</label><input type="range" id="optSens" min="2" max="16" step="1"><span class="rv" id="rvSens"></span></div>
+      <div class="row"><label for="optFov">Field of view</label><input type="range" id="optFov" min="80" max="120" step="5"><span class="rv" id="rvFov"></span></div>
+      <div class="row"><label for="optVol">Volume</label><input type="range" id="optVol" min="0" max="10" step="1"><span class="rv" id="rvVol"></span></div>
+      <div class="row"><label>Aim assist</label><div class="seg" id="optAssist"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
+      <div class="row"><label>Show FPS</label><div class="seg" id="optFps"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
+    </div>
+    <div class="row"><button class="big" id="bStart">Play</button><span id="rot" hidden>Turn your phone sideways for the best view</span></div>
+    <p class="hint touch-only">Left thumb moves. Drag the right side to look, hold Fire to shoot (you can drag while firing). Nade cycles grenades, Crouch steadies your aim.</p>
+    <p class="hint desk-only">Click to lock the mouse. WASD move, Shift walk, Ctrl or C crouch, Space jump, click fire, right-click scope, R reload, 1-4 weapons (4 cycles grenades), F inspect, G drop, E plant / defuse / pick up, B buy, Tab scores, Esc pause.</p>
+  </div>
+</div>
+
+<div id="buy" class="ovl" hidden>
+  <div class="panel"><h2>Buy <small id="buyMoney">$800</small><button class="pbtn" id="bBuyClose">Close</button></h2><div id="buyList"></div></div>
+</div>
+<div id="pause" class="ovl" hidden>
+  <div class="panel"><h2>Paused</h2><div class="tblwrap" id="pauseBoard"></div>
+    <div class="btns"><button class="big" id="bResume">Resume</button><button class="pbtn" id="bRestart">Restart match</button><button class="pbtn" id="bQuit">Main menu</button></div></div>
+</div>
+<div id="board" class="ovl" hidden><div class="panel"><h2>Scoreboard</h2><div class="tblwrap" id="boardBody"></div></div></div>
+<div id="over" class="ovl" hidden>
+  <div class="panel"><h2 id="overT">Match over</h2><div class="tblwrap" id="overBoard"></div>
+    <div class="btns"><button class="big" id="bAgain">Play again</button><button class="pbtn" id="bMenu2">Main menu</button></div></div>
+</div>

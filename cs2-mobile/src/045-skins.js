@@ -96,7 +96,7 @@ const rankXP=n=>300*n+40*n*n;
 function rankOf(xp){let n=0;while(n<RANKS.length-1&&xp>=rankXP(n+1))n++;const lo=rankXP(n),hi=rankXP(n+1);return{n,name:RANKS[n],prog:n>=RANKS.length-1?1:(xp-lo)/(hi-lo),need:hi-xp};}
 function awardMatch(won,p){
   const before=rankOf(INV.xp).n;
-  const xp=p.k*15+p.hsk*5+(won?220:70)+(G.mode==='defuse'?G.score[p.team]*20:0);
+  const xp=p.k*15+p.hsk*5+(won?220:70)+(isRounds()?G.score[p.team]*20:G.mode==='horde'?(G.wave||0)*60:G.mode==='aim'?(G.aimScore||0)/20:0);
   INV.xp+=xp;INV.matches++;INV.cases++;
   const after=rankOf(INV.xp).n;if(after>before)INV.cases++;
   saveInv();return{xp,rankUp:after>before,rank:RANKS[after]};

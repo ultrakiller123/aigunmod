@@ -54,3 +54,37 @@ function sfxRing(d){if(!AC)return;const t=AC.currentTime,os=AC.createOscillator(
 function sfxReload(){if(!AC)return;const t=AC.currentTime;[0,.45,.9].forEach((dt,i)=>noiseBurst(master,t+dt,i===2?2600:1800,.05,.18,'bandpass',900));}
 function sfxDraw(){if(!AC)return;noiseBurst(master,AC.currentTime,2400,.08,.12,'bandpass',1200);}
 function sfxHit(hs){tone(hs?1700:1100,.05,.12,'triangle');}
+// ambient soundscapes per map and a quiet menu loop
+let amb=null;
+function ambientStart(th){
+  ambientStop();if(!AC)return;
+  const kind=th.floor==='snow'?'snow':th.skyline==='cranes'?'harbor':th.skyline==='stacks'?'factory':th.skyline==='domes'?'town':'sand';
+  const src=AC.createBufferSource();src.buffer=noiseBuf;src.loop=true;
+  const f=AC.createBiquadFilter();f.type='bandpass';f.frequency.value={snow:520,sand:380,harbor:260,factory:140,town:700}[kind];f.Q.value=.7;
+  const g=AC.createGain();const base={snow:.16,sand:.08,harbor:.12,factory:.07,town:.035}[kind]*(th.night?.8:1);g.gain.value=base;
+  const lfo=AC.createOscillator(),lg=AC.createGain();lfo.frequency.value=kind==='harbor'?.12:.07;lg.gain.value=base*.7;lfo.connect(lg).connect(g.gain);lfo.start();
+  src.connect(f).connect(g).connect(master);src.start();
+  let hum=null;if(kind==='factory'){hum=AC.createOscillator();const hg=AC.createGain();hum.frequency.value=55;hg.gain.value=.025;hum.connect(hg).connect(master);hum.start();}
+  const extra=setInterval(()=>{if(!AC||G.state!=='play')return;const t=AC.currentTime;
+    if(kind==='harbor'&&Math.random()<.5){const o=AC.createOscillator(),gg=AC.createGain();o.type='sawtooth';o.frequency.setValueAtTime(1300,t);o.frequency.exponentialRampToValueAtTime(700,t+.25);
+      gg.gain.setValueAtTime(.025,t);gg.gain.exponentialRampToValueAtTime(.001,t+.3);o.connect(gg).connect(master);o.start(t);o.stop(t+.32);}
+    if((kind==='town'||kind==='sand'&&!th.night)&&Math.random()<.45)for(let i=0;i<3;i++){const o=AC.createOscillator(),gg=AC.createGain(),tt=t+i*.11;o.frequency.setValueAtTime(rnd(2800,3800),tt);o.frequency.exponentialRampToValueAtTime(rnd(2000,2600),tt+.08);
+      gg.gain.setValueAtTime(.018,tt);gg.gain.exponentialRampToValueAtTime(.001,tt+.09);o.connect(gg).connect(master);o.start(tt);o.stop(tt+.1);}
+    if(th.night&&Math.random()<.3){const o=AC.createOscillator(),gg=AC.createGain();o.frequency.value=4200;gg.gain.setValueAtTime(.008,t);gg.gain.exponentialRampToValueAtTime(.001,t+.05);o.connect(gg).connect(master);o.start(t);o.stop(t+.06);}
+  },2600);
+  amb={src,lfo,hum,extra};
+}
+function ambientStop(){if(!amb)return;try{amb.src.stop();amb.lfo.stop();if(amb.hum)amb.hum.stop();}catch(e){}clearInterval(amb.extra);amb=null;}
+let musicTimer=0,musicStep=0;
+const CHORDS=[[57,60,64],[53,57,60],[48,52,55],[55,59,62]];
+const midi=n=>440*Math.pow(2,(n-69)/12);
+function musicStart(){
+  if(musicTimer||!AC||S.music!=='on')return;musicStep=0;
+  musicTimer=setInterval(()=>{if(!AC||G.state!=='menu'){return;}const t=AC.currentTime,ch=CHORDS[(musicStep>>3)%4],i=musicStep%8;
+    const note=ch[[0,1,2,1,0,2,1,2][i]]+(i>=4?12:0),o=AC.createOscillator(),g=AC.createGain(),f=AC.createBiquadFilter();
+    o.type='triangle';o.frequency.value=midi(note);f.type='lowpass';f.frequency.value=1800;g.gain.setValueAtTime(.045,t);g.gain.exponentialRampToValueAtTime(.001,t+.32);
+    o.connect(f).connect(g).connect(master);o.start(t);o.stop(t+.34);
+    if(i===0){const b=AC.createOscillator(),bg=AC.createGain();b.type='sine';b.frequency.value=midi(ch[0]-24);bg.gain.setValueAtTime(.07,t);bg.gain.exponentialRampToValueAtTime(.001,t+2.4);b.connect(bg).connect(master);b.start(t);b.stop(t+2.5);}
+    musicStep++;},300);
+}
+function musicStop(){clearInterval(musicTimer);musicTimer=0;}

@@ -6,10 +6,11 @@ const other=t=>t==='T'?'CT':'T';
 const ffaLike=()=>G.mode==='ffa'||G.mode==='arms';
 const foe=(a,b)=>a!==b&&(ffaLike()||a.team!==b.team);
 const alive=t=>G.ents.filter(e=>e.alive&&e.team===t);
-const isDM=()=>G.mode!=='defuse';
+const isDM=()=>G.mode==='tdm'||G.mode==='ffa'||G.mode==='arms';
+const isRounds=()=>G.mode==='defuse'||G.mode==='retake';
 function makeEnt(name,team,isPlayer){
   return{id:nextId++,name,team,isPlayer,variant:Math.random()*3|0,x:0,z:0,y:0,vy:0,vx:0,vz:0,yaw:0,pitch:0,hp:100,armor:0,helmet:false,kit:false,alive:true,
-    primary:null,secondary:null,slot:'secondary',lastGun:'secondary',nades:{he:0,flash:0,smoke:0},nadeSel:null,fireCd:0,reloadT:0,spray:0,scoped:false,act:null,
+    primary:null,secondary:null,slot:'secondary',lastGun:'secondary',nades:{he:0,flash:0,smoke:0,molly:0},nadeSel:null,fireCd:0,reloadT:0,spray:0,scoped:false,act:null,
     money:800,k:0,d:0,hsk:0,dmgDealt:0,roundKills:0,lastShot:-9,punch:0,crouch:false,crouchV:0,blindUntil:0,blindAmt:0,protectUntil:0,respawnAt:0,spawnT:0,diedAt:0,
     sk:DIFF.normal,target:null,seenFor:0,percT:Math.random()*.1,path:null,pathKey:'',repath:false,lookAt:null,lookUntil:0,strafeT:0,strafeDir:1,stopShoot:false,
     hunt:null,stuckT:0,lx:0,lz:0,nudge:null,route:null,holdSpot:null,holdLook:null,burst:0,burstCd:0,guard:null,spotT:0,model:null,aimHead:false,reAim:0,
@@ -28,45 +29,51 @@ function curW(e){
   return KNIFE;
 }
 const curKey=e=>curW(e).key;
-const nadeCount=e=>e.nades.he+e.nades.flash+e.nades.smoke;
+const nadeCount=e=>e.nades.he+e.nades.flash+e.nades.smoke+e.nades.molly;
 
 // ---------------- match flow
 function startMatch(){
   for(const e of G.ents)if(e.model)scene.remove(e.model);
   if(MAPID!==S.map)loadMap(S.map);
   buildWorld();
+  {const hm=$('hitm');hm._t=0;hm.style.opacity=0;}
   G.ents=[];nextId=1;G.mode=S.mode;G.clock=0;G.bomb={state:'none'};G.planted=false;G.lastCall=0;radioClear();
   G.drops.forEach(d=>scene.remove(d.mesh));G.drops=[];clearNades();SMOKES.length=0;resetPools();
   const names=shuffle(NAMES.slice()),side=S.side;
   const p=makeEnt('You',ffaLike()?pick(['T','CT']):side,true);G.player=p;G.ents.push(p);
-  if(ffaLike()){const n=Math.max(1,S.foes+S.mates-1);for(let i=0;i<n;i++)G.ents.push(makeEnt(names.pop(),i%2?'T':'CT',false));}
-  else{for(let i=1;i<S.mates;i++)G.ents.push(makeEnt(names.pop(),side,false));for(let i=0;i<S.foes;i++)G.ents.push(makeEnt(names.pop(),other(side),false));}
-  for(const e of G.ents){e.alive=false;e.money=800;e.sk=DIFF[e.team===p.team&&!ffaLike()?S.diffA:S.diffE];if(!e.isPlayer)e.model=makeModel(e.team,e.variant);}
+  if(G.mode==='horde'||G.mode==='aim'){p.team='CT';if(G.mode==='horde')for(let i=1;i<S.mates;i++)G.ents.push(makeEnt(names.pop(),'CT',false));}
+  else if(ffaLike()){const n=Math.max(1,S.foes+S.mates-1);for(let i=0;i<n;i++)G.ents.push(makeEnt(names.pop(),i%2?'T':'CT',false));}
+  else{let nm=S.mates,nf=S.foes;if(G.mode==='retake'){const ct=side==='CT'?nm:nf;if(side==='CT')nf=Math.min(nf,Math.max(1,ct-1));else nm=Math.min(nm,Math.max(1,ct-1));}
+    for(let i=1;i<nm;i++)G.ents.push(makeEnt(names.pop(),side,false));for(let i=0;i<nf;i++)G.ents.push(makeEnt(names.pop(),other(side),false));}
+  G.dmgLog={};G.wave=0;G.fires=[];
+  for(const e of G.ents){e.alive=false;e.money=G.mode==='horde'?1500:800;e.sk=DIFF[e.team===p.team&&!ffaLike()?S.diffA:S.diffE];if(!e.isPlayer)e.model=makeModel(e.team,e.variant);}
   G.score={T:0,CT:0};G.streak={T:0,CT:0};G.round=0;
   const L=LEN[S.len];G.winRounds=L.rounds;G.limit=G.mode==='ffa'?L.ffa:L.tdm;G.arWinner=null;G.matchT=L.time;
   buildPips();
-  if(G.mode==='defuse')newRound();
+  if(isRounds())newRound();
+  else if(G.mode==='horde'){G.phase='live';G.rt=FREEZE;startHorde();}
+  else if(G.mode==='aim'){G.phase='live';G.rt=FREEZE;startAim();}
   else{G.phase='live';G.rt=FREEZE;for(const e of G.ents)spawnDM(e);showMsg(G.mode==='arms'?'Arms Race: every kill gives you the next weapon. Knife kill wins.':ffaLike()?`First to ${G.limit} kills`:`First team to ${G.limit} kills`,2.5);}
-  G.state='play';
+  G.state='play';musicStop();ambientStart(curTheme||MAP.theme);
   $('menu').hidden=true;$('over').hidden=true;$('pause').hidden=true;$('hud').hidden=false;$('banner').hidden=true;$('feed').innerHTML='';
 }
 function resetEnt(e){
   e.alive=true;e.hp=100;e.act=null;e.reloadT=0;e.fireCd=.3;e.spray=0;e.scoped=false;e.y=0;e.vy=0;e.punch=0;e.vx=e.vz=0;
   e.crouch=false;e.crouchV=0;e.blindUntil=0;e.roundKills=0;e.hurtFrom=null;e.killer=null;
   e.target=null;e.path=null;e.pathKey='';e.hunt=null;e.route=null;e.guard=null;e.lookAt=null;e.wantAct=null;e.seenFor=0;e.roam=null;e.lastKnown=null;
-  e.sprayN=0;e.tagUntil=0;e.retreat=null;e.lurkSpot=null;e.blindDodge=0;
+  e.sprayN=0;e.tagUntil=0;e.retreat=null;e.lurkSpot=null;e.blindDodge=0;e.pushSpot=null;
   if(e.model){e.model.visible=true;e.model.rotation.set(0,0,0);e.model.userData.dead=null;if(e.model.userData.helmet)e.model.userData.helmet.visible=true;}
 }
 function applyLoadout(e,kind){
   const lo=loadoutFor(e.team,kind);
   e.primary=lo.primary?gun(lo.primary):null;e.secondary=lo.secondary?gun(lo.secondary):null;
   e.armor=100;e.helmet=true;e.kit=e.team==='CT';
-  if(S.nades==='on'&&kind!=='knives')e.nades={he:1,flash:1,smoke:1};else e.nades={he:0,flash:0,smoke:0};
+  if(S.nades==='on'&&kind!=='knives')e.nades={he:1,flash:1,smoke:1,molly:1};else e.nades={he:0,flash:0,smoke:0,molly:0};
   e.slot=e.primary?'primary':e.secondary?'secondary':'knife';e.lastGun=e.slot;
 }
 function spawnFacing(x,z){return Math.atan2(WH/2-z,WW/2-x);}
 function newRound(){
-  G.round++;G.rt=0;G.phase='freeze';G.planted=false;G.spec=null;
+  G.round++;G.rt=0;G.phase='freeze';G.planted=false;G.spec=null;G.dmgLog={};clearFires();
   G.drops.forEach(d=>scene.remove(d.mesh));G.drops=[];clearNades();SMOKES.length=0;
   for(const p of pools.smoke)p.s.visible=false;
   const sp={T:shuffle(SPAWN.T.slice()),CT:shuffle(SPAWN.CT.slice())};
@@ -74,12 +81,13 @@ function newRound(){
     const survived=e.alive&&G.round>1;
     resetEnt(e);
     if(S.loadout!=='buy')applyLoadout(e,S.loadout);
-    else if(!survived){e.primary=null;e.secondary=gun(e.team==='T'?'glock':'usp');e.armor=0;e.helmet=false;e.kit=false;e.nades={he:0,flash:0,smoke:0};}
+    else if(!survived){e.primary=null;e.secondary=gun(e.team==='T'?'glock':'usp');e.armor=0;e.helmet=false;e.kit=false;e.nades={he:0,flash:0,smoke:0,molly:0};}
     if(!e.secondary&&S.loadout==='buy')e.secondary=gun(e.team==='T'?'glock':'usp');
     e.slot=e.primary?'primary':e.secondary?'secondary':'knife';e.lastGun=e.slot;
     const s=sp[e.team].pop()||pick(SPAWN[e.team]);e.x=tc(s[0])+rnd(-.4,.4);e.z=tc(s[1])+rnd(-.4,.4);
     e.yaw=spawnFacing(e.x,e.z);e.pitch=0;
   }
+  if(G.mode==='retake'){setupRetake();$('banner').hidden=true;closeBuy();radioClear();return;}
   const Ts=G.ents.filter(e=>e.team==='T');
   const carrier=G.player.team==='T'&&(Ts.length===1||Math.random()<.4)?G.player:pick(Ts);
   if(carrier!==G.player&&G.player.team==='T')setTimeout(()=>showMsg(`${carrier.name} has the bomb`,2.5),2100);
@@ -102,7 +110,7 @@ function newRound(){
     else radio(m,eco==='eco'?'Saving this round, play for picks.':`I'll hold ${m.area==='M'?'mid':m.area}.`);},FREEZE*1000-1500);
 }
 function giveArms(e){
-  const k=AR[e.arLevel];e.primary=null;e.secondary=null;e.nades={he:0,flash:0,smoke:0};
+  const k=AR[e.arLevel];e.primary=null;e.secondary=null;e.nades={he:0,flash:0,smoke:0,molly:0};
   if(k!=='knife'){if(WPN[k].slot==='primary')e.primary=gun(k);else e.secondary=gun(k);}
   e.slot=e.primary?'primary':e.secondary?'secondary':'knife';e.lastGun=e.slot;e.reloadT=0;e.fireCd=.35;e.scoped=false;
 }
@@ -121,6 +129,7 @@ function spawnDM(e){
 function endRound(winner,reason){
   if(G.phase==='end')return;G.phase='end';G.endT=5;
   const loser=other(winner);G.score[winner]++;G.streak[winner]=0;G.streak[loser]=Math.min(5,G.streak[loser]+1);
+  const before=G.player.money;
   for(const e of G.ents){
     if(e.team===winner)e.money+=reason==='bomb'?3500:3250;
     else e.money+=1400+500*(G.streak[loser]-1)+(loser==='T'&&G.planted?800:0);
@@ -130,13 +139,13 @@ function endRound(winner,reason){
   $('bnT').textContent=winner==='T'?'Terrorists win':'Counter-Terrorists win';
   $('bnT').className='c'+winner;$('bnS').textContent=R[reason];
   const mvp=G.ents.filter(e=>e.team===winner).sort((a,b)=>b.roundKills-a.roundKills)[0];
-  $('bnM').textContent=mvp&&mvp.roundKills?`MVP: ${mvp.name} · ${mvp.roundKills} kill${mvp.roundKills>1?'s':''}`:'';
+  $('bnM').textContent=(mvp&&mvp.roundKills?`MVP: ${mvp.name} · ${mvp.roundKills} kill${mvp.roundKills>1?'s':''} · `:'')+(G.mode==='defuse'?`You earned $${G.player.money-before}`:'');
   $('banner').hidden=false;
   tone(winner===G.player.team?660:220,.6,.25,'triangle');
   closeBuy();
 }
 function checkElim(){
-  if(G.mode!=='defuse'||G.phase==='end')return;
+  if(!isRounds()||G.phase==='end')return;
   const t=alive('T').length,c=alive('CT').length;
   if(c===0)endRound('T','elim');
   else if(t===0&&G.bomb.state!=='planted')endRound('CT','elim');
@@ -154,8 +163,11 @@ function matchOver(){
   if(ffaLike()){const l=dmLeader();title=l===G.player?'Victory <small>You topped the board</small>':`Defeat <small>${l.name} won with ${l.k}</small>`;}
   else{const win=G.score.T>G.score.CT?'T':G.score.CT>G.score.T?'CT':null,me=win===G.player.team;
     title=`${win?me?'Victory':'Defeat':'Draw'} <small class="c${win||'FFA'}">${G.score.T} : ${G.score.CT}</small>`;}
+  if(G.mode==='horde')title=`Overrun <small>You survived ${Math.max(0,G.wave-1)} wave${G.wave===2?'':'s'}</small>`;
+  if(G.mode==='aim'){const acc=G.shots?Math.round(G.hits/G.shots*100):0,rt=G.reacts.length?Math.round(G.reacts.reduce((a,b)=>a+b,0)/G.reacts.length*1000):0;
+    title=`Score ${G.aimScore} <small>${G.aimKills} kills · ${G.aimHS} headshots · ${acc}% accuracy · ${rt} ms average kill time</small>`;}
   if(G.mode==='arms'){const w=G.arWinner||G.ents.slice().sort((a,b)=>b.arLevel-a.arLevel)[0];title=w===G.player?'Victory <small>Golden knife kill</small>':`Defeat <small>${w.name} finished the ladder</small>`;}
-  const p=G.player,won=G.mode==='arms'?(G.arWinner===p):ffaLike()?dmLeader()===p:G.score[p.team]>G.score[other(p.team)];
+  const p=G.player,won=G.mode==='horde'?G.wave>=5:G.mode==='aim'?G.aimScore>=2000:G.mode==='arms'?(G.arWinner===p):ffaLike()?dmLeader()===p:G.score[p.team]>G.score[other(p.team)];
   const rw=awardMatch(won,p);
   $('overT').innerHTML=title;$('overBoard').innerHTML=`<p class="reward">+${rw.xp} XP · +${rw.rankUp?2:1} case${rw.rankUp?'s':''}${rw.rankUp?` · Ranked up to <b>${rw.rank}</b>`:''}</p>`+boardHTML();$('over').hidden=false;
 }
@@ -196,9 +208,10 @@ const SHOP=[
   ['Rifles',['galil','famas','ak','m4','sg553','aug']],
   ['Snipers',['ssg08','awp']],
   ['Gear',['kevlar','armor','kit']],
-  ['Grenades',['he','flash','smoke']],
+  ['Grenades',['he','flash','smoke','molly']],
 ];
 function canBuy(){const p=G.player;if(G.state!=='play'||!p.alive)return false;
+  if(G.mode==='horde')return G.waveState==='break';if(G.mode==='retake'||G.mode==='aim')return false;
   if(isDM())return S.loadout==='buy'&&G.clock-p.spawnT<12;
   return S.loadout==='buy'&&G.phase!=='end'&&G.rt<BUY_TIME;}
 function priceOf(k){return isDM()?0:(WPN[k]||GEAR[k]).price;}

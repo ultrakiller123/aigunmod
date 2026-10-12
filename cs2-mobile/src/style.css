@@ -94,6 +94,11 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--ground);color:va
 #reddot::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;border-radius:50%;background:#ff3b30;box-shadow:0 0 6px #ff3b30}
 .btn{position:fixed;pointer-events:auto;border-radius:50%;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);
   font:700 11px/1 var(--f-hud);letter-spacing:.06em;text-transform:uppercase;display:grid;place-items:center;touch-action:none;padding:0}
+.btn{transform:scale(var(--bs,1))}
+#editBar{position:fixed;top:calc(var(--st) + 8px);left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:10px;align-items:center;background:rgba(13,15,18,.94);border:1px solid var(--line);padding:8px 12px;font:600 13px var(--f-body)}
+#editBar .big{padding:8px 16px;font-size:14px}
+body.editing #hud>.hud{display:none!important}body.editing .btn{outline:2px dashed var(--t);outline-offset:3px;cursor:move}body.editing #cv{filter:brightness(.6)}
+#spec{white-space:pre-line}
 .btn.on{background:rgba(239,233,220,.28)}
 #bFire{right:calc(var(--sr) + 26px);bottom:calc(var(--sb) + 64px);width:86px;height:86px;border-color:rgba(229,83,75,.7);background:rgba(229,83,75,.28);font-size:13px}
 #bFireL{left:calc(var(--sl) + 22px);top:58%;width:56px;height:56px;border-color:rgba(229,83,75,.6);background:rgba(229,83,75,.2)}

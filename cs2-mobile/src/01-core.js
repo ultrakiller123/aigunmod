@@ -27,6 +27,7 @@ const WPN={
   he:{name:'HE Grenade',short:'HE',slot:'grenade',cat:'nade',nade:1,price:300,speed:1,rof:.9,max:1},
   flash:{name:'Flashbang',short:'Flash',slot:'grenade',cat:'nade',nade:1,price:200,speed:1,rof:.9,max:2},
   smoke:{name:'Smoke Grenade',short:'Smoke',slot:'grenade',cat:'nade',nade:1,price:300,speed:1,rof:.9,max:1},
+  molly:{name:'Molotov',short:'Molly',slot:'grenade',cat:'nade',nade:1,price:400,speed:1,rof:.9,max:1,pen:1},
   glock:W('Glock-18','pistol','T',200,30,.13,20,120,2.2,.012,.05,.012,1,.47,300,.012),
   usp:W('USP-S','pistol','CT',200,35,.16,12,24,2.2,.008,.045,.014,1,.5,300,.014,{short:'USP-S'}),
   p250:W('P250','pistol',null,300,38,.15,13,26,2.2,.011,.05,.02,1,.64,300,.02),
@@ -50,9 +51,9 @@ const WPN={
   awp:W('AWP','sniper',null,4750,115,1.45,5,30,3.6,.09,.25,0,.8,.975,100,.06,{zoom:.28,scoped:.0012,sniper:1}),
 };
 for(const k in WPN)WPN[k].key=k;
-const NADES=['he','flash','smoke'];
+const NADES=['he','flash','smoke','molly'];
 const KNIFE={key:'knife',mag:Infinity,res:0};
-const NADEW={he:{key:'he',mag:Infinity,res:0},flash:{key:'flash',mag:Infinity,res:0},smoke:{key:'smoke',mag:Infinity,res:0}};
+const NADEW={he:{key:'he',mag:Infinity,res:0},flash:{key:'flash',mag:Infinity,res:0},smoke:{key:'smoke',mag:Infinity,res:0},molly:{key:'molly',mag:Infinity,res:0}};
 const GEAR={kevlar:{name:'Kevlar Vest',price:650},armor:{name:'Kevlar + Helmet',price:1000},kit:{name:'Defuse Kit',price:400,team:'CT'}};
 const gun=k=>({key:k,mag:WPN[k].mag,res:WPN[k].res});
 const shortName=k=>WPN[k].short||WPN[k].name;
@@ -96,7 +97,7 @@ function loadoutFor(team,kind){
 }
 
 // ---------------- settings
-const S={xh:{style:'classic',color:'#9ff59a',size:7,gap:4,thick:2,dot:true,outline:true,dynamic:true},vignette:'on',mode:'defuse',map:'dunes',side:'T',mates:5,foes:5,len:'normal',diffE:'normal',diffA:'normal',style:'balanced',loadout:'buy',nades:'on',
+const S={tod:'day',music:'on',dynres:'on',layout:{},btnScale:1,xh:{style:'classic',color:'#9ff59a',size:7,gap:4,thick:2,dot:true,outline:true,dynamic:true},vignette:'on',mode:'defuse',map:'dunes',side:'T',mates:5,foes:5,len:'normal',diffE:'normal',diffA:'normal',style:'balanced',loadout:'buy',nades:'on',
   gfx:isTouch?'med':'high',sens:7,fov:100,vol:7,assist:'on',fps:'off'};
 try{Object.assign(S,JSON.parse(localStorage.getItem('clutchpoint3d-v2')||'{}'));}catch(e){}
 const saveS=()=>{try{localStorage.setItem('clutchpoint3d-v2',JSON.stringify(S));}catch(e){}};

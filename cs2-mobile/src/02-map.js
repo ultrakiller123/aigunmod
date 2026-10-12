@@ -153,7 +153,7 @@ function findPath(sx,sy,gx,gy){
     const cur=pop();if(cur===g)break;if(closedA[cur]===stampN)continue;closedA[cur]=stampN;
     const cx=cur%MW,cy=(cur/MW)|0;
     for(const[dx,dy,c]of NB){const nx=cx+dx,ny=cy+dy;if(solid(nx,ny))continue;if(dx&&dy&&(solid(cx+dx,cy)||solid(cx,cy+dy)))continue;
-      const ni=ny*MW+nx,ng=gS[cur]+c+PEN[ni];if(stampA[ni]!==stampN||ng<gS[ni]){stampA[ni]=stampN;gS[ni]=ng;came[ni]=cur;push(ng+H(nx,ny),ni);}}
+      const ni=ny*MW+nx,ng=gS[cur]+c+PEN[ni]+fireCost(nx,ny);if(stampA[ni]!==stampN||ng<gS[ni]){stampA[ni]=stampN;gS[ni]=ng;came[ni]=cur;push(ng+H(nx,ny),ni);}}
   }
   if(stampA[g]!==stampN)return[];
   const out=[];let c=g;while(c!==-1&&c!==s){out.push({x:tc(c%MW),z:tc((c/MW)|0)});c=came[c];}

@@ -3,6 +3,7 @@
 <div id="stick" hidden><div id="knob"></div></div>
 
 <div id="vig" hidden></div>
+<div id="editBar" hidden><span>Drag buttons where your thumbs want them.</span><button class="pbtn" id="bEditReset">Reset</button><button class="big" id="bEditDone">Done</button></div>
 <div id="hud" hidden>
   <div id="top" class="hud">
     <div class="side"><div class="sc" id="scT">0</div><div class="pips" id="pipsT"></div><div class="sublbl" id="lblL"></div></div>
@@ -53,9 +54,11 @@
     </div>
     <div class="pane" data-pane="play">
       <div class="row"><label>Mode</label><div class="seg" id="optMode">
-        <button data-v="defuse">Defuse</button><button data-v="tdm">Team DM</button><button data-v="ffa">Free-for-all</button><button data-v="arms">Arms Race</button>
+        <button data-v="defuse">Defuse</button><button data-v="retake">Retakes</button><button data-v="tdm">Team DM</button><button data-v="ffa">Free-for-all</button><button data-v="arms">Arms Race</button><button data-v="horde">Horde</button><button data-v="aim">Aim Training</button>
       </div></div>
+      <p class="desc" id="modeDesc"></p>
       <div class="maps" id="maps"></div>
+      <div class="row"><label>Time of day</label><div class="seg" id="optTod"><button data-v="day">Day</button><button data-v="sunset">Sunset</button><button data-v="night">Night</button></div></div>
       <div class="row" id="rowPreset"><label>Preset</label><div class="seg">
         <button data-preset="1,5">Clutch 1v5</button><button data-preset="1,3">Clutch 1v3</button><button data-preset="5,5">5v5</button><button data-preset="2,2">Wingman</button>
       </div></div>
@@ -82,6 +85,9 @@
       <div class="row"><label for="optVol">Volume</label><input type="range" id="optVol" min="0" max="10" step="1"><span class="rv" id="rvVol"></span></div>
       <div class="row"><label>Aim assist</label><div class="seg" id="optAssist"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
       <div class="row"><label>Show FPS</label><div class="seg" id="optFps"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
+      <div class="row"><label>Auto resolution</label><div class="seg" id="optDyn"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
+      <div class="row"><label>Menu music</label><div class="seg" id="optMusic"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
+      <div class="row"><label for="optBtn">Button size</label><input type="range" id="optBtn" min="70" max="140" step="5"><span class="rv" id="rvBtn"></span><button class="pbtn" id="bEditLayout">Edit touch layout</button></div>
       <div class="row"><label>Vignette</label><div class="seg" id="optVig"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
       <div class="xhed"><div class="xhprev" id="xhPrev"><div class="xhwrap" id="xhPrevIn"></div></div>
         <div class="pane">

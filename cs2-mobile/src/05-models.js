@@ -12,7 +12,9 @@ const GM={
   ssg08:{t:'rifle',L:1,c:0x3a4048,scope:'big',stock:'solid',mag:'small'},awp:{t:'rifle',L:1.1,c:0x3d4a33,scope:'big',stock:'solid',mag:'small'},
 };
 function nadeMesh(k){const g=new THREE.Group();
-  if(k==='he'){const s=new THREE.Mesh(new THREE.SphereGeometry(.045,10,8),mat(0x4b5a2c));g.add(s);g.add(box(.02,.05,.015,0x888888,.02,.04,0));g.add(cyl(.012,.02,0x666666,0,.05,0,6,'y'));}
+  if(k==='molly'){g.add(cyl(.032,.11,0x3a6a2a,0,0,0,10,'y'));g.add(cyl(.013,.06,0x3a6a2a,0,.085,0,8,'y'));const rag=box(.03,.07,.03,0xd8a050,0,.13,0);rag.rotation.z=.3;g.add(rag);
+    const fl=new THREE.Sprite(flashMat);fl.scale.setScalar(.12);fl.position.y=.17;g.add(fl);}
+  else if(k==='he'){const s=new THREE.Mesh(new THREE.SphereGeometry(.045,10,8),mat(0x4b5a2c));g.add(s);g.add(box(.02,.05,.015,0x888888,.02,.04,0));g.add(cyl(.012,.02,0x666666,0,.05,0,6,'y'));}
   else{g.add(cyl(.032,.12,k==='flash'?0x8a8c8f:0x55635a,0,0,0,10,'y'));g.add(cyl(.034,.02,k==='flash'?0x2a2a2a:0xb8a040,0,.03,0,10,'y'));g.add(box(.018,.06,.012,0x888888,.03,.03,0));}
   g.userData={tip:0,mag:null};return g;}
 const BLADE=0xc8ccd2;
@@ -91,7 +93,10 @@ const CHAR={
      {shirt:0x3a3836,pants:0x2a2a2c,vest:0x4a3a2a,head:'bandana',hc:0x8a2a1e,acc:0xe3a23b,skin:0xa8754f}],
   CT:[{shirt:0x3d5068,pants:0x2b3644,vest:0x26364a,head:'helmet',hc:0x1f2a38,acc:0x62a6ea,skin:0xd6a982},
       {shirt:0x4d5a4a,pants:0x3a4237,vest:0x2f382c,head:'helmet',hc:0x2a3326,acc:0x62a6ea,skin:0xc4936a},
-      {shirt:0x2d3440,pants:0x252a33,vest:0x1d222a,head:'capset',hc:0x1a1d22,acc:0x62a6ea,skin:0xe0b48f}]};
+      {shirt:0x2d3440,pants:0x252a33,vest:0x1d222a,head:'capset',hc:0x1a1d22,acc:0x62a6ea,skin:0xe0b48f}],
+  Z:[{shirt:0x4a4636,pants:0x34302a,vest:0x3c382c,head:'none',hc:0,acc:0x6a8a2a,skin:0x8aa070},
+     {shirt:0x5a3a30,pants:0x2a2a28,vest:0x4a2e26,head:'none',hc:0,acc:0x7a2a1a,skin:0x9aa878},
+     {shirt:0x3a4048,pants:0x2a2c30,vest:0x30343a,head:'none',hc:0,acc:0x4a6a3a,skin:0x7f9668}]};
 const V3=(x,y,z)=>new THREE.Vector3(x,y,z);
 function limb(a,b,th,color){const len=a.distanceTo(b);const m=new THREE.Mesh(new THREE.BoxGeometry(th,th,len),mat(color));m.position.copy(a).add(b).multiplyScalar(.5);m.lookAt(b);return m;}
 function makeModel(team,vi){
@@ -108,12 +113,15 @@ function makeModel(team,vi){
   spine.add(box(.42,.52,.24,c.shirt,0,.27,0));spine.add(box(.46,.38,.3,c.vest,0,.3,0));
   for(const px of[-.13,0,.13])spine.add(box(.1,.12,.06,shade(c.vest,.8),px,.2,-.17));
   spine.add(box(.48,.04,.31,c.acc,0,.12,0));
-  if(team==='CT'){spine.add(box(.24,.3,.12,0x1c1f24,0,.32,.2));spine.add(cyl(.008,.3,0x111111,.08,.62,.22,4,'y'));}
+  if(team==='Z'){}
+  else if(team==='CT'){spine.add(box(.24,.3,.12,0x1c1f24,0,.32,.2));spine.add(cyl(.008,.3,0x111111,.08,.62,.22,4,'y'));}
   else spine.add(box(.3,.36,.14,shade(c.shirt,.7),0,.3,.19));
   spine.add(box(.14,.12,.2,c.shirt,-.27,.46,0));spine.add(box(.14,.12,.2,c.shirt,.27,.46,0));
   const head=new THREE.Group();head.position.y=.58;spine.add(head);
   head.add(box(.09,.08,.09,c.skin,0,.03,0));head.add(box(.2,.24,.22,c.skin,0,.17,0));
   if(c.head==='balaclava'){head.add(box(.215,.25,.235,c.hc,0,.175,0));head.add(box(.15,.04,.01,c.skin,0,.19,-.118));}
+  else if(team==='Z'){const em=new THREE.MeshBasicMaterial({color:0xff3a20});for(const ex of[-.05,.05]){const m=new THREE.Mesh(new THREE.BoxGeometry(.04,.022,.01),em);m.position.set(ex,.19,-.112);head.add(m);}
+    head.add(box(.09,.03,.01,0x2a1010,0,.08,-.111));head.add(box(.2,.06,.225,shade(c.skin,.8),0,.27,0));}
   else{head.add(box(.035,.018,.01,0x1a1a1a,-.05,.19,-.111));head.add(box(.035,.018,.01,0x1a1a1a,.05,.19,-.111));head.add(box(.06,.015,.01,shade(c.skin,.75),0,.09,-.111));}
   if(c.head==='cap'||c.head==='capset'){head.add(box(.23,.08,.24,c.hc,0,.28,0));head.add(box(.2,.02,.12,c.hc,0,.25,-.16));
     if(c.head==='capset'){head.add(box(.04,.09,.09,0x111111,-.12,.18,0));head.add(box(.04,.09,.09,0x111111,.12,.18,0));head.add(box(.24,.025,.03,0x111111,0,.27,0));}}

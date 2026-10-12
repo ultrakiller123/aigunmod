@@ -20,7 +20,12 @@ function perceive(b){
 }
 function botGoal(b){
   const bomb=G.bomb,C=G.clock;b.wantAct=null;
-  if(isDM()){
+  if(G.mode==='horde'){
+    if(b.zombie){let best=null,bd=1e9;for(const h of G.ents)if(h.alive&&h.team==='CT'){const d=d2(b,h);if(d<bd){bd=d;best=h;}}return best?{x:best.x,z:best.z}:null;}
+    const p=G.player;if(p.alive){if(!b.follow||C>b.followT){const a=rnd(0,TAU);b.follow={dx:Math.cos(a)*rnd(2,5),dz:Math.sin(a)*rnd(2,5)};b.followT=C+rnd(3,6);}
+      const g={x:p.x+b.follow.dx,z:p.z+b.follow.dz};return d2(b,p)>4?g:null;}
+  }
+  if(isDM()||G.mode==='horde'){
     if(b.hunt&&C<b.hunt.until&&C>=(b.hunt.start||0)){if(d2(b,b.hunt)<2)b.hunt=null;else return b.hunt;}
     if(!b.roam||d2(b,b.roam)<2.5||C>b.roamUntil){const t=pick(FLOOR);b.roam={x:tc(t[0]),z:tc(t[1])};b.roamUntil=C+rnd(10,18);}
     return b.roam;
@@ -47,7 +52,7 @@ function botGoal(b){
     return b.route[0];
   }
   if(b.pusher&&G.rt>FREEZE+10&&!b.pushSpot){const r=pick(ROUTES[pick(['A','B'])]);b.pushSpot={x:tc(r[0]),z:tc(r[1])};}
-  const spot=b.pushSpot||b.holdSpot;
+  const spot=b.pushSpot||b.holdSpot;if(!spot)return null;
   if(d2(b,spot)<1.5&&C>b.lookUntil){const ts=MAP.spawn.T;b.lookAt=b.pushSpot?{x:tc(ts[0]+ts[2]/2),z:tc(ts[1]+ts[3]/2)}:b.holdLook;b.lookUntil=C+.5;}
   return spot;
 }
@@ -75,11 +80,14 @@ function botThrow(b,type,pt){
 }
 function botUtility(b,toward){
   if(S.nades!=='on')return;
+  if(b.nades.molly&&Math.random()<.35){const sp=pick(HOLDS[G.siteTarget]);botThrow(b,'molly',{x:tc(sp[0]),z:tc(sp[1])});return;}
   if(b.nades.flash&&Math.random()<.6)botThrow(b,'flash',{x:lerp(b.x,toward.x,.7),z:lerp(b.z,toward.z,.7)});
   else if(b.nades.smoke&&Math.random()<.5)botThrow(b,'smoke',{x:lerp(b.x,toward.x,.8),z:lerp(b.z,toward.z,.8)});
 }
 function botUpdate(b,dt){
+  if(b.dummy)return dummyMove(b);
   b.percT-=dt;if(b.percT<=0){b.percT=.1+Math.random()*.05;perceive(b);}
+  const burning=inFire(b);if(burning&&!b.act){const a=Math.atan2(b.z-burning.z,b.x-burning.x);b.path=null;b.repath=true;return[Math.cos(a),Math.sin(a),1];}
   if(b.target&&!b.target.alive)b.target=null;
   if(b.target&&G.clock<b.target.protectUntil&&isDM())b.target=null;
   const tgt=b.target;
@@ -130,6 +138,7 @@ function botUpdate(b,dt){
     b.hunt={x:tgt.x,z:tgt.z,until:G.clock+5};
   }else{
     b.seenFor=0;b.burst=0;b.crouch=false;b.scoped=false;
+    if(b.lastKnown&&b.nades.molly&&G.clock>b.nadeCd&&G.clock-b.lastKnown.t<4&&G.clock-b.lastKnown.t>.8&&Math.random()<.015)botThrow(b,'molly',b.lastKnown);
     if(b.lastKnown&&b.nades.he&&G.clock>b.nadeCd&&G.clock-b.lastKnown.t<3&&G.clock-b.lastKnown.t>.6&&Math.random()<.02)botThrow(b,'he',b.lastKnown);
     if(!isDM()&&b.team==='CT'&&G.bomb.state==='planted'&&b.nades.smoke&&G.clock>b.nadeCd){const d=d2(b,G.bomb);if(d>9&&d<22&&Math.random()<.03)botThrow(b,'smoke',G.bomb);}
     const v=botNav(b,goal);mx=v[0];mz=v[1];

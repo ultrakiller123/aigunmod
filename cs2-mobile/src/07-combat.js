@@ -35,7 +35,7 @@ function afterThrow(e){
 function tryFire(e){
   const w=curW(e),def=WPN[w.key];
   if(e.fireCd>0||e.reloadT>0||e.act||!e.alive||G.phase==='freeze')return false;
-  e.lastShot=G.clock;e.protectUntil=0;
+  e.lastShot=G.clock;e.protectUntil=0;if(e===G.player&&G.mode==='aim'&&!def.melee)G.shots++;
   const isV=e===viewer();
   if(def.melee){e.fireCd=def.rof;sfxShot('knife',e.x,e.z);if(isV){VM.knifeT=.3;VM.knifeSide*=-1;}
     for(const o of G.ents){if(!o.alive||!foe(e,o))continue;const d=d2(e,o);if(d>1.7)continue;
@@ -107,6 +107,8 @@ function damage(v,src,wk,hs,base,at){
   let d=base*(hs?4:1);const pen=WPN[wk]&&WPN[wk].pen!==undefined?WPN[wk].pen:.5;
   if(v.armor>0&&(!hs||v.helmet)){const ab=d*(1-pen);v.armor=Math.max(0,v.armor-ab*.5);d*=pen;}
   d=Math.min(d,v.hp);v.hp-=d;v.tagUntil=G.clock+.35;
+  if(src&&G.dmgLog){const k=src.id+'>'+v.id,r=G.dmgLog[k]||(G.dmgLog[k]={d:0,h:0,t:0});r.d+=d;if(G.clock-r.t>.05)r.h++;r.t=G.clock;}
+  if(src===G.player&&G.mode==='aim'&&wk!=='molly')G.hits++;
   if(hs&&v.helmet&&v.armor>0&&v.hp>0&&wk!=='knife'&&at){tone(2700,.07,.18,'square',v.x,v.z);chips(at.x,at.y,at.z,0,1,0,0xffd060,4,2);}
   if(src){src.dmgDealt+=d;}
   if(at){puff(at.x,at.y,at.z,0x9a1010,.3,.35,.3,1.4,2);if(Math.random()<.4)bloodSplat(v.x+rnd(-.6,.6),v.z+rnd(-.6,.6));}
@@ -118,7 +120,8 @@ function damage(v,src,wk,hs,base,at){
 }
 const STREAK=['','','Double kill','Triple kill','Quad kill','Ace!'];
 function kill(v,src,wk,hs){
-  v.alive=false;v.hp=0;v.act=null;v.d++;v.diedAt=G.clock;v.killer=src;v.scoped=false;
+  v.alive=false;v.hp=0;v.act=null;v.d++;v.diedAt=G.clock;v.killer=src;v.killWk=wk;v.scoped=false;
+  if(G.mode==='aim'&&src===G.player){G.aimKills++;G.aimScore+=hs?200:100;if(hs)G.aimHS++;G.reacts.push(G.clock-v.bornAt);}
   if(src&&foe(src,v)){src.k++;if(hs)src.hsk++;src.roundKills++;src.money=Math.min(16000,src.money+(WPN[wk]&&WPN[wk].reward||300));
     if(G.mode==='tdm')G.score[src.team]++;
     if(src===G.player){const n=src.roundKills;notice(n>=5&&!isDM()?'Ace!':STREAK[Math.min(n,4)]||(hs?'Headshot':''),n>=2?'':'#e5534b');if(n>=2)tone(520+n*90,.25,.2,'triangle');}}
@@ -167,7 +170,7 @@ function updateNades(dt){
     if(n.y<=.07){n.vx*=Math.max(0,1-dt*3);n.vz*=Math.max(0,1-dt*3);}
     n.mesh.position.set(n.x,n.y,n.z);n.mesh.rotation.x+=n.spin*dt*Math.min(1,Math.hypot(n.vx,n.vz)/4);n.mesh.rotation.z+=n.spin*.6*dt;
     const spd=Math.hypot(n.vx,n.vy,n.vz);
-    const go=n.type==='smoke'?(n.t>.8&&spd<.6)||n.t>3:n.t>(n.type==='he'?1.6:1.45);
+    const go=n.type==='smoke'?(n.t>.8&&spd<.6)||n.t>3:n.type==='molly'?(n.y<=.08&&n.t>.12)||n.t>2.2:n.t>(n.type==='he'?1.6:1.45);
     if(go){detonate(n);scene.remove(n.mesh);G.nadesLive.splice(i,1);}
   }
 }
@@ -189,10 +192,39 @@ function detonate(n){
       const dur=.4+amt*4.2;e.blindUntil=Math.max(e.blindUntil,G.clock+dur);e.blindAmt=amt;
       if(e===G.player&&amt>.3)sfxRing(dur);
       if(!e.isPlayer){e.target=null;}}
+  }else if(n.type==='molly'){
+    if(SMOKES.some(s=>Math.hypot(s.x-n.x,s.z-n.z)<s.r&&G.clock<s.t1)){puff(n.x,.5,n.z,0x888888,1.5,1,.8,2);return;}
+    sfxBoom(n.x,n.z,false);startFire(n.x,n.z,n.owner);
   }else{
+    for(const f of G.fires)if(Math.hypot(f.x-n.x,f.z-n.z)<6)f.t1=Math.min(f.t1,G.clock+.4);
     sfxSmoke(n.x,n.z);const s={x:n.x,z:n.z,r:4.6,t0:G.clock,t1:G.clock+17};SMOKES.push(s);smokeCloud(n.x,n.z,s.t0,s.t1);
   }
 }
+
+// ---------------- fire from molotovs
+const flamePool=[];for(let i=0;i<70;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:puffTex,color:0xff8a2a,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false,opacity:0}));s.visible=false;scene.add(s);flamePool.push({s,f:null,ox:0,oz:0,ph:0});}
+const fireLight=new THREE.PointLight(0xff7a2a,0,16,2);scene.add(fireLight);
+function clearFires(){if(G.fires)G.fires.length=0;for(const p of flamePool){p.s.visible=false;p.f=null;}}
+function startFire(x,z,owner){
+  // spread over walkable tiles around the impact point
+  const f={x,z,r:3.4,t0:G.clock,t1:G.clock+7,owner,tick:0};G.fires.push(f);
+  let n=0;for(const p of flamePool){if(p.f&&p.f.t1>G.clock)continue;if(n++>=22)break;
+    let ox,oz;for(let k=0;k<6;k++){const a=rnd(0,TAU),r=Math.sqrt(Math.random())*f.r;ox=Math.cos(a)*r;oz=Math.sin(a)*r;if(!solid(Math.floor((x+ox)/TILE),Math.floor((z+oz)/TILE)))break;}
+    p.f=f;p.ox=ox;p.oz=oz;p.ph=rnd(0,TAU);p.s.visible=true;}
+}
+function inFire(e){for(const f of G.fires)if(G.clock<f.t1&&Math.hypot(e.x-f.x,e.z-f.z)<f.r&&e.y<.6)return f;return null;}
+function fireUpdate(dt){
+  if(!G.fires)return;let near=null,nd=1e9;const L=listener();
+  for(let i=G.fires.length-1;i>=0;i--){const f=G.fires[i];if(G.clock>f.t1){G.fires.splice(i,1);continue;}
+    for(const e of G.ents){if(!e.alive||e.y>.6||Math.hypot(e.x-f.x,e.z-f.z)>f.r)continue;if(e!==f.owner&&!foe(f.owner,e))continue;damage(e,f.owner,'molly',false,34*dt,null);}
+    if(L){const d=Math.hypot(L.x-f.x,L.z-f.z);if(d<nd){nd=d;near=f;}}
+    f.tick-=dt;if(f.tick<=0){f.tick=.18;if(L&&Math.hypot(L.x-f.x,L.z-f.z)<35)sfxStep(f.x,f.z,true);}}
+  for(const p of flamePool){if(!p.f)continue;if(G.clock>p.f.t1){p.s.visible=false;p.f=null;continue;}
+    const age=G.clock-p.f.t0,life=clamp(Math.min(age*3,(p.f.t1-G.clock)*.8),0,1),fl=.75+Math.sin(G.clock*14+p.ph)*.25;
+    p.s.position.set(p.f.x+p.ox,.45+fl*.35,p.f.z+p.oz);p.s.scale.set(1.3*fl*life+.01,1.9*fl*life+.01,1);p.s.material.opacity=.85*life;}
+  if(near){fireLight.position.set(near.x,1.4,near.z);fireLight.intensity=2.2+Math.sin(G.clock*20)*.5;}else fireLight.intensity=0;
+}
+function fireCost(tx,ty){if(!G.fires||!G.fires.length)return 0;const x=tc(tx),z=tc(ty);for(const f of G.fires)if(Math.hypot(x-f.x,z-f.z)<f.r+1.2)return 40;return 0;}
 
 // ---------------- hearing
 function noise(e,range){
@@ -265,7 +297,7 @@ function groundAt(e){ // standing on crates or barrels after a jump
 }
 function moveEnt(e,mx,mz,run,dt){
   const def=WPN[curKey(e)];
-  let sp=SPEED*def.speed*run*(e.scoped?.55:1)*(e.isPlayer?1:.95)*(1-e.crouchV*.55)*(G.clock<e.tagUntil?.6:1);
+  let sp=SPEED*def.speed*run*(e.scoped?.55:1)*(e.isPlayer?1:.95)*(1-e.crouchV*.55)*(G.clock<e.tagUntil?.6:1)*(e.zombie?1.12:1);
   if(e.act||G.phase==='freeze'||!e.alive)sp=0;
   const air=e.y>e.ground+.05,k=air?2:14;
   e.vx+=(mx*sp-e.vx)*Math.min(1,dt*k);e.vz+=(mz*sp-e.vz)*Math.min(1,dt*k);

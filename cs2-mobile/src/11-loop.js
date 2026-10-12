@@ -1,11 +1,11 @@
 // ---------------- main update
 function update(dt){
   G.clock+=dt;G.rt+=dt;
-  if(G.mode==='defuse'){
+  if(isRounds()){
     if(G.phase==='freeze'&&G.rt>=FREEZE){G.phase='live';showMsg('Go go go',1.2);}
     if(G.phase==='live'&&G.bomb.state!=='planted'&&G.rt-FREEZE>=ROUND_TIME)endRound('CT','time');
     if(G.phase==='end'){G.endT-=dt;if(G.endT<=0){if(G.score.T>=G.winRounds||G.score.CT>=G.winRounds)return matchOver();newRound();}}
-  }else{
+  }else if(isDM()){
     G.matchT-=dt;checkDMEnd();if(G.state!=='play')return;
     for(const e of G.ents)if(!e.alive&&G.clock>=e.respawnAt)spawnDM(e);
   }
@@ -15,7 +15,9 @@ function update(dt){
     const[mx,mz,run]=e.isPlayer?playerUpdate(e,dt):botUpdate(e,dt);
     moveEnt(e,mx,mz,run,dt);
   }
-  separate();bombUpdate(dt);updateNades(dt);
+  separate();bombUpdate(dt);updateNades(dt);fireUpdate(dt);
+  if(G.mode==='horde'){hordeUpdate(dt);if(G.state!=='play')return;}
+  if(G.mode==='aim'){aimUpdate(dt);if(G.state!=='play')return;}
   for(let i=SMOKES.length-1;i>=0;i--)if(G.clock>SMOKES[i].t1)SMOKES.splice(i,1);
   G.shake=Math.max(0,G.shake-dt*1.5);
 }
@@ -56,7 +58,9 @@ function render(dt){
     animateVM(v,dt);renderer.clearDepth();vmCam.aspect=aspect;vmCam.updateProjectionMatrix();renderer.render(vmScene,vmCam);
   }
 }
-function skyFollow(){if(!skyMesh)return;skyMesh.position.copy(camera.position);const th=MAP.theme;
+function skyFollow(){if(!skyMesh)return;skyMesh.position.copy(camera.position);const th=curTheme||MAP.theme;
+  if(th.night&&G.state!=='menu'){flashlight.intensity=2.4;flashlight.position.copy(camera.position);camera.getWorldDirection(tmpA);flashlight.target.position.copy(camera.position).addScaledVector(tmpA,12);flashlight.target.updateMatrixWorld();}
+  else flashlight.intensity=0;
   sunSprite.position.set(camera.position.x+th.sunDir[0]*300,camera.position.y+330,camera.position.z+th.sunDir[1]*300);}
 
 // ---------------- boot
@@ -64,12 +68,15 @@ function resize(){renderer.setSize(innerWidth,innerHeight,false);if(G.state==='m
 addEventListener('resize',resize);
 loadMap(MAPS[S.map]?S.map:'dunes');S.map=MAPID;buildWorld();buildRadar();buildMapCards();syncMenu();resize();
 let last=performance.now();
+let perfT=0,perfN=0;
 function frame(t){
-  const dt=Math.min(.05,(t-last)/1000);last=t;
+  const raw=(t-last)/1000,dt=Math.min(.05,raw);last=t;
+  if(G.state==='play'&&S.dynres==='on'){perfT+=raw;perfN++;if(perfT>2){const fps=perfN/perfT;
+    if(fps<38&&resScale>.5){resScale=Math.max(.5,resScale*.85);applyRes();}else if(fps>57&&resScale<1){resScale=Math.min(1,resScale*1.08);applyRes();}perfT=0;perfN=0;}}
   if(G.state==='play')update(dt);
   render(G.state==='play'?dt:0);
   if(G.state==='play')hud(dt);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__cp={G,S,MAPS,loadMap,startMatch,WPN,update};
+window.__cp={G,S,MAPS,loadMap,startMatch,WPN,update,tryFire};

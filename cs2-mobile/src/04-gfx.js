@@ -12,10 +12,11 @@ const boomLight=new THREE.PointLight(0xffa040,0,30,2);scene.add(boomLight);
 const vmScene=new THREE.Scene(),vmCam=new THREE.PerspectiveCamera(58,1,.01,10);
 vmScene.add(new THREE.HemisphereLight(0xffffff,0x504030,1));const vmSun=new THREE.DirectionalLight(0xffffff,.55);vmSun.position.set(.4,1,.5);vmScene.add(vmSun);
 const vmLight=new THREE.PointLight(0xffc070,0,3,2);vmLight.position.set(.1,0,-.8);vmScene.add(vmLight);
-let Q='med';
+let Q='med',basePR=1,resScale=1;
+function applyRes(){renderer.setPixelRatio(basePR*resScale);renderer.setSize(innerWidth,innerHeight,false);}
 function applyQuality(){
   Q=S.gfx;const dpr=window.devicePixelRatio||1;
-  renderer.setPixelRatio(Q==='low'?Math.min(dpr,1)*.75:Q==='med'?Math.min(dpr,1.35):Math.min(dpr,2));
+  basePR=Q==='low'?Math.min(dpr,1)*.75:Q==='med'?Math.min(dpr,1.35):Math.min(dpr,2);renderer.setPixelRatio(basePR*resScale);renderer.setSize(innerWidth,innerHeight,false);
   renderer.shadowMap.enabled=Q==='high';
 }
 
@@ -155,29 +156,36 @@ function rects(val){const used=new Uint8Array(MW*MH),out=[];
     for(let j=0;j<h;j++)for(let k=0;k<w;k++)used[(y+j)*MW+x+k]=1;out.push([x,y,w,h]);}
   return out;}
 function nearFloor(x,y,w,h){for(let j=y-1;j<=y+h;j++)for(let i=x-1;i<=x+w;i++)if(!solid(i,j))return true;return false;}
-let builtKey='';
+let builtKey='',curTheme=null;
+const flashlight=new THREE.SpotLight(0xfff2d8,0,48,.4,.55,1.3);scene.add(flashlight);scene.add(flashlight.target);
+function todTheme(t){
+  if(S.tod==='sunset')return Object.assign({},t,{sky:['#d4704a','#f5c08a'],fog:0xdba27e,sun:0xffb070,sunI:t.sunI*.85,hemi:[0xffd2b0,0x3a2e2e,t.hemi[2]*.82],sunH:45});
+  if(S.tod==='night')return Object.assign({},t,{sky:['#040814','#16223a'],fog:0x0d1524,fogNear:22,fogFar:105,sun:0x8fa6ff,sunI:.28,hemi:[0x5a6a9a,0x0a0a10,.42],night:true,particles:t.particles==='dust'?null:t.particles});
+  return t;
+}
 function buildWorld(){
-  const key=MAPID+'|'+S.gfx;if(builtKey===key)return;builtKey=key;
+  const key=MAPID+'|'+S.gfx+'|'+S.tod;if(builtKey===key)return;builtKey=key;
   applyQuality();
   if(world){scene.remove(world);disposeTree(world);}
   Object.values(MAT).forEach(m=>m.dispose());MAT={};resetViewmodel();
   world=new THREE.Group();scene.add(world);
-  const th=MAP.theme,hi=Q==='high',lo=Q==='low';
+  const th=curTheme=todTheme(MAP.theme),hi=Q==='high',lo=Q==='low';
   scene.fog=new THREE.Fog(th.fog,th.fogNear*(lo?.8:1),th.fogFar*(lo?.75:1));scene.background=new THREE.Color(th.fog);
   hemi.color.setHex(th.hemi[0]);hemi.groundColor.setHex(th.hemi[1]);hemi.intensity=th.hemi[2];
   sun.color.setHex(th.sun);sun.intensity=th.sunI;
-  sun.position.set(WW/2+th.sunDir[0]*120,140,WH/2+th.sunDir[1]*120);sun.target.position.set(WW/2,0,WH/2);
+  sun.position.set(WW/2+th.sunDir[0]*120,th.sunH||140,WH/2+th.sunDir[1]*120);sun.target.position.set(WW/2,0,WH/2);
   sun.castShadow=hi;
   if(hi){sun.shadow.mapSize.set(2048,2048);const half=Math.hypot(WW,WH)/2+6,sc=sun.shadow.camera;sc.left=-half;sc.right=half;sc.top=half;sc.bottom=-half;sc.near=10;sc.far=400;sc.updateProjectionMatrix();
     sun.shadow.bias=-.0006;sun.shadow.normalBias=.03;}
   // sky dome
   const skyTex=canvasTex(512,256,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h/2);gr.addColorStop(0,th.sky[0]);gr.addColorStop(1,th.sky[1]);g.fillStyle=gr;g.fillRect(0,0,w,h);
     for(let i=0;i<40;i++){const x=rnd(0,w),y=rnd(h*.12,h*.45),r=rnd(10,40);g.save();g.scale(2.4,1);blotch(g,x/2.4,y,r,'rgba(255,255,255,.22)');blotch(g,(x+w)/2.4,y,r,'rgba(255,255,255,.22)');g.restore();}
+    if(th.night){g.fillStyle='rgba(4,8,20,.85)';g.fillRect(0,0,w,h/2);for(let i=0;i<500;i++){g.fillStyle=`rgba(255,255,255,${rnd(.3,1)})`;g.fillRect(rnd(0,w),rnd(0,h*.48),rnd(.5,1.6),rnd(.5,1.6));}}
     g.fillStyle=th.sky[1];g.fillRect(0,h/2,w,h/2);});
   skyMesh=new THREE.Mesh(new THREE.SphereGeometry(500,24,12),new THREE.MeshBasicMaterial({map:skyTex,side:THREE.BackSide,fog:false,depthWrite:false}));
   skyMesh.renderOrder=-1;world.add(skyMesh);
   sunSprite=new THREE.Sprite(new THREE.SpriteMaterial({map:puffTex,color:0xfff2d0,fog:false,depthWrite:false,blending:THREE.AdditiveBlending,transparent:true}));
-  sunSprite.scale.setScalar(90);world.add(sunSprite);
+  sunSprite.scale.setScalar(th.night?40:90);if(th.night)sunSprite.material.color.setHex(0xc8d6ff);world.add(sunSprite);
   if(hi){skyTex.mapping=THREE.EquirectangularReflectionMapping;const pm=new THREE.PMREMGenerator(renderer);envTex=pm.fromEquirectangular(skyTex).texture;pm.dispose();}else envTex=null;
   scene.environment=envTex;vmScene.environment=envTex;
   const outerCol=th.skyline==='cranes'?0x2c4a58:th.floor==='snow'?0xe4eaf0:th.floor==='sand'?0xc8ad7e:shade(th.base,1.1);
@@ -256,7 +264,7 @@ function buildFacades(th){
     for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){if(cell(x+dx,y+dy)!==1)continue;const h=((x*92821)^(y*68917)^(dx*31+dy*17))>>>0;
       const px=tc(x)+dx*TILE/2,pz=tc(y)+dy*TILE/2,ry=Math.atan2(-dx,-dy);
       if(h%5===0)wins.push([px-dx*.03,3.5+(h%3)*.15,pz-dy*.03,ry]);else if(h%13===1)doors.push([px-dx*.03,1.15,pz-dy*.03,ry]);}}
-  const lit=th.win==='cabin';
+  const lit=th.win==='cabin'||th.night;
   const add=(list,geo,tex)=>{if(!list.length)return;const m=new THREE.InstancedMesh(geo,lit&&tex!==doorT?new THREE.MeshBasicMaterial({map:tex}):new THREE.MeshLambertMaterial({map:tex}),list.length);
     const o=new THREE.Object3D();list.forEach((w,i)=>{o.position.set(w[0],w[1],w[2]);o.rotation.set(0,w[3],0);o.updateMatrix();m.setMatrixAt(i,o.matrix);});world.add(m);};
   const doorT=facadeTex('door');

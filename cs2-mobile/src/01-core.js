@@ -59,17 +59,27 @@ const shortName=k=>WPN[k].short||WPN[k].name;
 
 // ---------------- bot skill and behaviour
 const DIFF={
-  easy:{react:.7,err:.12,turn:3.2,hs:.1,acc:1.9,stop:.1,see:50,crouch:0,label:'Slow to react, sprays wide, rarely aims for the head.'},
-  normal:{react:.42,err:.065,turn:5.5,hs:.22,acc:1.35,stop:.4,see:65,crouch:.1,label:'Casual opponents that still punish you in the open.'},
-  hard:{react:.26,err:.035,turn:9,hs:.38,acc:1.05,stop:.75,see:80,crouch:.25,label:'Counter-strafes, bursts and hunts for headshots.'},
-  expert:{react:.17,err:.02,turn:13,hs:.52,acc:.9,stop:.9,see:95,crouch:.35,label:'Fast flicks and tight sprays. Expect to lose duels you take carelessly.'},
-  insane:{react:.1,err:.01,turn:20,hs:.7,acc:.75,stop:1,see:110,crouch:.4,label:'Near-instant reactions. For clutch masochists.'},
+  easy:{comp:.15,react:.7,err:.12,turn:3.2,hs:.1,acc:1.9,stop:.1,see:50,crouch:0,label:'Slow to react, sprays wide, rarely aims for the head.'},
+  normal:{comp:.45,react:.42,err:.065,turn:5.5,hs:.22,acc:1.35,stop:.4,see:65,crouch:.1,label:'Casual opponents that still punish you in the open.'},
+  hard:{comp:.7,react:.26,err:.035,turn:9,hs:.38,acc:1.05,stop:.75,see:80,crouch:.25,label:'Counter-strafes, bursts and hunts for headshots.'},
+  expert:{comp:.85,react:.17,err:.02,turn:13,hs:.52,acc:.9,stop:.9,see:95,crouch:.35,label:'Fast flicks and tight sprays. Expect to lose duels you take carelessly.'},
+  insane:{comp:.95,react:.1,err:.01,turn:20,hs:.7,acc:.75,stop:1,see:110,crouch:.4,label:'Near-instant reactions. For clutch masochists.'},
 };
 const STYLE={
   passive:{hunt:.45,wait:[7,16],rot:.25,push:0},
   balanced:{hunt:1,wait:[1,7],rot:.4,push:.15},
   aggressive:{hunt:1.6,wait:[0,2],rot:.6,push:.45},
 };
+// recoil: auto weapons climb, then wander left and right; semi-autos kick a little
+function sprayOffset(def,n){
+  if(!def||!def.kick||def.melee||def.nade||n<.5)return[0,0];
+  const k=def.kick;
+  if(!def.auto)return[0,Math.min(n,3)*k*.35];
+  const up=Math.min(n,10)*k*.55+Math.max(0,n-10)*k*.06;
+  const side=n<5?Math.sin(n*1.3)*k*.15:Math.sin((n-5)*.42+def.key.length)*k*2.2*Math.min(1,(n-5)/4);
+  return[side,up];
+}
+const AR=['awp','ak','m4','sg553','famas','galil','p90','ump','xm1014','nova','negev','mac10','deagle','fiveseven','tec9','p250','glock','knife'];
 const LEN={short:{rounds:5,ffa:15,tdm:30,time:240},normal:{rounds:8,ffa:25,tdm:50,time:360},long:{rounds:13,ffa:40,tdm:80,time:540}};
 const NAMES=['Ace','Blitz','Cobra','Dingo','Echo','Fury','Ghost','Havoc','Jinx','Kilo','Lynx','Mamba','Nova','Onyx','Pike','Rook','Sarge','Talon','Viper','Wolf','Brick','Cinder','Dusk','Flint','Gauge','Hex','Ivy','Jett','Knox','Rust'];
 
@@ -86,7 +96,7 @@ function loadoutFor(team,kind){
 }
 
 // ---------------- settings
-const S={mode:'defuse',map:'dunes',side:'T',mates:5,foes:5,len:'normal',diffE:'normal',diffA:'normal',style:'balanced',loadout:'buy',nades:'on',
+const S={xh:{style:'classic',color:'#9ff59a',size:7,gap:4,thick:2,dot:true,outline:true,dynamic:true},vignette:'on',mode:'defuse',map:'dunes',side:'T',mates:5,foes:5,len:'normal',diffE:'normal',diffA:'normal',style:'balanced',loadout:'buy',nades:'on',
   gfx:isTouch?'med':'high',sens:7,fov:100,vol:7,assist:'on',fps:'off'};
 try{Object.assign(S,JSON.parse(localStorage.getItem('clutchpoint3d-v2')||'{}'));}catch(e){}
 const saveS=()=>{try{localStorage.setItem('clutchpoint3d-v2',JSON.stringify(S));}catch(e){}};

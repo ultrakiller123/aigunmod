@@ -2,6 +2,7 @@
 <div id="touch"></div>
 <div id="stick" hidden><div id="knob"></div></div>
 
+<div id="vig" hidden></div>
 <div id="hud" hidden>
   <div id="top" class="hud">
     <div class="side"><div class="sc" id="scT">0</div><div class="pips" id="pipsT"></div><div class="sublbl" id="lblL"></div></div>
@@ -9,6 +10,8 @@
     <div class="side"><div class="sc" id="scCT">0</div><div class="pips" id="pipsCT"></div><div class="sublbl" id="lblR"></div></div>
   </div>
   <canvas id="radar" class="hud"></canvas>
+  <div id="loc" class="hud"></div>
+  <div id="radio" class="hud"></div>
   <div id="fps" class="hud" hidden></div>
   <div id="feed" class="hud"></div>
   <div id="scope" class="hud" hidden></div>
@@ -43,14 +46,14 @@
 
 <div id="menu" class="ovl">
   <div class="mwrap">
-    <h1>Clutch<br><em>Point</em></h1>
+    <div class="mhead"><h1>Clutch<br><em>Point</em></h1><div class="rankc" id="rankCard"></div></div>
     <p class="sub">First-person tactical shooter against bots. Plant, defuse, or just frag in deathmatch.</p>
     <div class="tabs" role="tablist">
-      <button data-tab="play" class="sel">Play</button><button data-tab="bots">Bots</button><button data-tab="opts">Settings</button>
+      <button data-tab="play" class="sel">Play</button><button data-tab="bots">Bots</button><button data-tab="inv">Inventory</button><button data-tab="opts">Settings</button>
     </div>
     <div class="pane" data-pane="play">
       <div class="row"><label>Mode</label><div class="seg" id="optMode">
-        <button data-v="defuse">Defuse</button><button data-v="tdm">Team DM</button><button data-v="ffa">Free-for-all</button>
+        <button data-v="defuse">Defuse</button><button data-v="tdm">Team DM</button><button data-v="ffa">Free-for-all</button><button data-v="arms">Arms Race</button>
       </div></div>
       <div class="maps" id="maps"></div>
       <div class="row" id="rowPreset"><label>Preset</label><div class="seg">
@@ -79,6 +82,21 @@
       <div class="row"><label for="optVol">Volume</label><input type="range" id="optVol" min="0" max="10" step="1"><span class="rv" id="rvVol"></span></div>
       <div class="row"><label>Aim assist</label><div class="seg" id="optAssist"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
       <div class="row"><label>Show FPS</label><div class="seg" id="optFps"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
+      <div class="row"><label>Vignette</label><div class="seg" id="optVig"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
+      <div class="xhed"><div class="xhprev" id="xhPrev"><div class="xhwrap" id="xhPrevIn"></div></div>
+        <div class="pane">
+          <div class="row"><label>Crosshair</label><div class="seg" id="xhStyle"><button data-v="classic">Classic</button><button data-v="dot">Dot</button><button data-v="circle">Circle</button><button data-v="cross">T-shape</button></div></div>
+          <div class="row"><label>Color</label><div class="seg swatches" id="xhColor"><button data-v="#9ff59a" style="--c:#9ff59a">Green</button><button data-v="#ffe14a" style="--c:#ffe14a">Yellow</button><button data-v="#4ae3ff" style="--c:#4ae3ff">Cyan</button><button data-v="#ffffff" style="--c:#ffffff">White</button><button data-v="#ff5ad1" style="--c:#ff5ad1">Pink</button><button data-v="#ff4040" style="--c:#ff4040">Red</button></div></div>
+          <div class="row"><label for="xhSize">Length</label><input type="range" id="xhSize" min="2" max="16" step="1"><span class="rv" id="rvXhSize"></span></div>
+          <div class="row"><label for="xhGap">Gap</label><input type="range" id="xhGap" min="0" max="12" step="1"><span class="rv" id="rvXhGap"></span></div>
+          <div class="row"><label for="xhThick">Thickness</label><input type="range" id="xhThick" min="1" max="5" step="1"><span class="rv" id="rvXhThick"></span></div>
+          <div class="row"><label>Options</label><div class="seg" id="xhFlags"><button data-f="dot">Center dot</button><button data-f="outline">Outline</button><button data-f="dynamic">Dynamic</button></div></div>
+        </div></div>
+    </div>
+    <div class="pane" data-pane="inv" hidden>
+      <div class="row"><b class="cases" id="caseCount"></b><button class="big" id="bOpenCase">Open case</button></div>
+      <p class="desc">Win or finish matches to earn cases. Tap a skin to equip it; it shows on your weapon in first person.</p>
+      <div class="inv" id="invGrid"></div>
     </div>
     <div class="row"><button class="big" id="bStart">Play</button><span id="rot" hidden>Turn your phone sideways for the best view</span></div>
     <p class="hint touch-only">Left thumb moves. Drag the right side to look, hold Fire to shoot (you can drag while firing). Nade cycles grenades, Crouch steadies your aim.</p>
@@ -86,6 +104,12 @@
   </div>
 </div>
 
+<div id="caseOvl" class="ovl" hidden>
+  <div class="panel casep"><h2>Clutch Case <button class="pbtn" id="bCaseClose">Close</button></h2>
+    <div class="reelwin"><div class="reel" id="reel"></div><i class="reelmark"></i></div>
+    <div class="caseres" id="caseRes"></div>
+    <div class="btns"><button class="big" id="bCaseAgain">Open another</button><button class="pbtn" id="bCaseEquip">Equip</button></div></div>
+</div>
 <div id="buy" class="ovl" hidden>
   <div class="panel"><h2>Buy <small id="buyMoney">$800</small><button class="pbtn" id="bBuyClose">Close</button></h2><div id="buyList"></div></div>
 </div>

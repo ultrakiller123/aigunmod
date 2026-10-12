@@ -38,7 +38,7 @@ function render(dt){
     deathCam=null;
     const bob=v.y<=v.ground+.01?Math.sin(VM.bobT*2)*.025*Math.min(1,v.moving/4):0;
     camera.position.set(v.x+rnd(-sh,sh),eyeH(v)+bob+rnd(-sh,sh),v.z+rnd(-sh,sh));
-    camera.rotation.y=-v.yaw-PI/2;camera.rotation.x=v.pitch+v.punch*.6;camera.rotation.z=VM.swayX*.3;
+    camera.rotation.y=-v.yaw-PI/2-(v.vpY||0);camera.rotation.x=v.pitch+(v.vpP||0)+v.punch*.6;camera.rotation.z=VM.swayX*.3;
     const zoom=v.scoped?WPN[curKey(v)].zoom||1:1,hf=S.fov*zoom*PI/180;
     camera.fov=clamp(2*Math.atan(Math.tan(hf/2)/aspect)*180/PI,8,95);
   }else{ // death cam: watch the killer from above the body

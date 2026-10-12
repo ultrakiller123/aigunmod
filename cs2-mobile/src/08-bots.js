@@ -5,11 +5,12 @@ function perceive(b){
   for(const o of G.ents){
     if(!o.alive||!foe(b,o))continue;const d=d2(b,o);if(d>b.sk.see)continue;
     if(!canSee(b,o))continue;
-    if(G.mode!=='ffa'&&b.team===G.player.team)o.spotT=G.clock+.3;
+    if(!ffaLike()&&b.team===G.player.team)o.spotT=G.clock+.3;
     const sc=d*(Math.abs(angDiff(b.yaw,Math.atan2(o.z-b.z,o.x-b.x)))>1.4?1.6:1);
     if(sc<bd){bd=sc;best=o;}
   }
   if(best!==b.target){
+    if(best&&!b.target&&!ffaLike()&&b.team===G.player.team&&G.clock-(G.lastCall||0)>4){G.lastCall=G.clock;const loc=locationName(best.x,best.z);radio(b,loc?`Enemy spotted at ${loc}!`:'Contact!');}
     if(best){const behind=Math.abs(angDiff(b.yaw,Math.atan2(best.z-b.z,best.x-b.x)))>1.4;b.seenFor=(behind?-.35:0)-Math.random()*.12;b.reAim=0;
       if(!isDM()&&b.team==='CT'&&G.bomb.state!=='planted'){for(const m of G.ents)if(m!==b&&!m.isPlayer&&m.alive&&m.team==='CT'&&!m.target&&Math.random()<STYLE[S.style].rot)m.hunt={x:best.x,z:best.z,until:G.clock+10,start:G.clock+rnd(.5,2.5)};}
     }else if(b.target&&b.target.alive)b.lostAt=G.clock;
@@ -37,6 +38,7 @@ function botGoal(b){
       return b.guard;
     }
     if(G.rt<G.tGo&&ROUND_TIME-(G.rt-FREEZE)>35)return null;
+    if(b.lurk&&!carrier&&ROUND_TIME-(G.rt-FREEZE)>20){if(!b.lurkSpot){const r=pick(ROUTES[G.siteTarget==='A'?'B':'A']);b.lurkSpot={x:tc(r[0]),z:tc(r[1])};}return b.lurkSpot;}
     if(!b.route){const site=G.siteTarget,r=pick(ROUTES[site]),[a,bb,w,h]=SITES[site];
       const pts=floorTiles(a+1,bb+1,w-2,h-2),pt=pick(pts);
       b.route=[{x:tc(r[0]),z:tc(r[1])},{x:tc(pt[0]),z:tc(pt[1])}];b.utilThrown=false;}
@@ -82,6 +84,9 @@ function botUpdate(b,dt){
   if(b.target&&G.clock<b.target.protectUntil&&isDM())b.target=null;
   const tgt=b.target;
   if(G.phase==='freeze'){return[0,0,0];}
+  for(const n of G.nadesLive){if(n.type!=='flash'||!foe(n.owner,b)||n.t<.95)continue;const d=Math.hypot(n.x-b.x,n.z-b.z);
+    if(d<22&&los(b.x,b.z,n.x,n.z)&&Math.random()<b.sk.comp+.1){b.yaw=Math.atan2(b.z-n.z,b.x-n.x);b.blindDodge=G.clock+.6;}}
+  if(G.clock<(b.blindDodge||0))return[0,0,0];
   const blind=G.clock<b.blindUntil;
   if(blind){b.yaw+=Math.sin(G.clock*3+b.id)*dt*1.5;b.crouch=false;return[-Math.cos(b.yaw)*.5,-Math.sin(b.yaw)*.5,.6];}
   const w=curW(b),def=WPN[w.key];
@@ -111,7 +116,13 @@ function botUpdate(b,dt){
       else if(tryFire(b)&&def.auto){b.burst++;if(b.burst>=(d>40?3:d>20?5:12)){b.burst=0;b.burstCd=rnd(.15,.32);}}
     }
     b.strafeT-=dt;if(b.strafeT<=0){b.strafeT=rnd(.3,.9);b.strafeDir=Math.random()<.5?-1:1;b.stopShoot=Math.random()<b.sk.stop;b.crouch=b.stopShoot&&Math.random()<b.sk.crouch&&!def.melee;}
-    if(def.melee){const v=botNav(b,tgt);mx=v[0];mz=v[1];b.crouch=false;}
+    if((b.hp<35||b.reloadT>0)&&!b.retreat&&!def.melee&&Math.random()<.04*STYLE[S.style].rot*2.5){
+      let best=null,bd=1e9;for(let k=0;k<30;k++){const tx=Math.floor(b.x/TILE)+Math.round(rnd(-4,4)),ty=Math.floor(b.z/TILE)+Math.round(rnd(-4,4));if(solid(tx,ty))continue;
+        const cx=tc(tx),cz=tc(ty);if(los(cx,cz,tgt.x,tgt.z))continue;const dd=Math.hypot(cx-b.x,cz-b.z);if(dd<bd){bd=dd;best={x:cx,z:cz};}}
+      if(best){b.retreat={x:best.x,z:best.z,until:G.clock+2.5};if(b.team===G.player.team&&!ffaLike()&&b.hp<35)radio(b,`I'm hurt, need backup at ${locationName(b.x,b.z)||'my spot'}!`);}}
+    if(b.retreat&&(G.clock>b.retreat.until||d2(b,b.retreat)<.8))b.retreat=null;
+    if(b.retreat){const v=botNav(b,b.retreat);mx=v[0];mz=v[1];b.crouch=false;}
+    else if(def.melee){const v=botNav(b,tgt);mx=v[0];mz=v[1];b.crouch=false;}
     else if(!(b.stopShoot&&firing)&&!def.sniper){mx=-dz/d*b.strafeDir;mz=dx/d*b.strafeDir;run=.8;}
     if(def.pellets&&d>12&&!b.stopShoot){mx+=dx/d*.7;mz+=dz/d*.7;}
     if(b.reloadT>0){mx-=dx/d*.8;mz-=dz/d*.8;b.crouch=false;}
@@ -127,7 +138,7 @@ function botUpdate(b,dt){
     else if(mx||mz)face=Math.atan2(mz,mx);
     if(face!==null)b.yaw=turn(b.yaw,face,dt*5);
     b.pitch*=.9;
-    if(isDM()||(b.hunt&&G.clock<b.hunt.until))run=1;else if(b.team==='T'&&b.route&&b.route.length===1&&S.style!=='aggressive')run=.85;
+    if(b.lurk&&!b.hunt)run=WALK;else if(isDM()||(b.hunt&&G.clock<b.hunt.until))run=1;else if(b.team==='T'&&b.route&&b.route.length===1&&S.style!=='aggressive')run=.85;
   }
   b.burstCd-=dt;
   b.stuckT+=dt;if(b.stuckT>.7){if((mx||mz)&&Math.hypot(b.x-b.lx,b.z-b.lz)<.25){b.repath=true;b.nudge={x:rnd(-1,1),z:rnd(-1,1),t:G.clock+.35};}b.stuckT=0;b.lx=b.x;b.lz=b.z;}

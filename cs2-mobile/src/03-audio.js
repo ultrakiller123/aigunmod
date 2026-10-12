@@ -27,7 +27,8 @@ const SHOT_KEY={usp:[1500,.1,.25],deagle:[2200,.28,.9],m4:[3000,.18,.7],negev:[2
 function sfxShot(k,x,z){
   if(!AC)return;const{vol,pan}=spatial(x,z,k==='knife'?20:110);if(vol<.01)return;
   const[f,len,amp]=SHOT_KEY[k]||SHOT_CAT[WPN[k].cat]||SHOT_CAT.pistol,t=AC.currentTime,o=outNode(pan);
-  noiseBurst(o,t,f,len,amp*vol);
+  const far=1-Math.sqrt(vol);noiseBurst(o,t,f*lerp(1,.28,far),len*(1+far*.8),amp*vol);
+  if(far>.3)noiseBurst(o,t+.06+far*.12,f*.25,len*1.6,amp*vol*.35);
   if(k!=='knife')thump(o,t,150,40,.13,amp*vol*.7);
 }
 function tone(freq,len,amp,type='sine',x,z){

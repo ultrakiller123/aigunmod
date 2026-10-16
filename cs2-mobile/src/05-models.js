@@ -179,7 +179,7 @@ function animateModel(e,dt){
     L.th.rotation.x=Math.sin(ph)*.75*spd+c*1.3;L.kn.rotation.x=-(Math.max(0,Math.sin(ph+1.2))*1.15*spd)-c*2.15;}
   u.spine.rotation.x=-.1*spd-c*.18;u.spine.rotation.y=Math.sin(u.phase)*.08*spd;
   const def=WPN[key];
-  const rl=e.reloadT>0&&def.reload?Math.sin(clamp(e.reloadT/def.reload,0,1)*PI):0;
+  const rl=e.reloadT>0&&def.reload?Math.sin(clamp(e.reloadT/(e.reloadMax||def.reload),0,1)*PI):0;
   const sinceShot=G.clock-e.lastShot,kick=clamp((.09-sinceShot)/.09,0,1);
   u.aim.rotation.x=e.pitch+.1*spd+c*.18-rl*.55;u.aim.rotation.y=-u.spine.rotation.y+(key==='knife'&&sinceShot<.3?Math.sin(sinceShot/.3*PI)*.9:0);
   u.aim.rotation.z=rl*.35;u.aim.position.z=kick*.06;
@@ -211,7 +211,7 @@ function buildVM(v,key){
   arm(V3(.18,-.3,.45),rh);if(lh)arm(V3(-.28,-.32,.4),lh);
   VM.mag=g.userData.mag;VM.magY=VM.mag?VM.mag.position.y:0;
   g.add(VM.flash);VM.flash.position.set(0,.016,g.userData.tip);
-  VM.draw=.45;if(v===G.player)sfxDraw();
+  VM.draw=.45/(1+abil(v,'quick'));VM.drawMax=VM.draw;if(v===G.player)sfxDraw();
 }
 function animateVM(v,dt){
   const key=curKey(v);
@@ -226,8 +226,8 @@ function animateVM(v,dt){
   const bx=Math.sin(VM.bobT)*.014*spd,by=-Math.abs(Math.cos(VM.bobT))*.014*spd;
   let px=VM.base.x+bx+VM.swayX,py=VM.base.y+by+VM.swayY-VM.land*.05-v.crouchV*.01,pz=VM.base.z;
   let rx=0,ry=VM.swayX*1.5,rz=VM.swayX*2;
-  const dk=VM.draw/.45;rx-=dk*1.1;py-=dk*.25;ry-=dk*.3;
-  if(v.reloadT>0&&def.reload){const r=1-v.reloadT/def.reload,env=Math.sin(r*PI);rz+=env*.55;rx+=env*.22;py-=env*.04;px-=env*.03;
+  const dk=VM.draw/(VM.drawMax||.45);rx-=dk*1.1;py-=dk*.25;ry-=dk*.3;
+  if(v.reloadT>0&&def.reload){const r=1-v.reloadT/(v.reloadMax||def.reload),env=Math.sin(r*PI);rz+=env*.55;rx+=env*.22;py-=env*.04;px-=env*.03;
     if(VM.mag){const mm=r<.15?0:r<.32?(r-.15)/.17:r<.6?1:r<.8?1-(r-.6)/.2:0;VM.mag.position.y=VM.magY-mm*.35;VM.mag.visible=mm<.98;}}
   else if(VM.mag){VM.mag.position.y=VM.magY;VM.mag.visible=true;}
   if(VM.inspect>0){const t=1-VM.inspect/2.4,s=Math.sin(t*PI);

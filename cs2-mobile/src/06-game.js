@@ -37,7 +37,7 @@ function startMatch(){
   if(MAPID!==S.map)loadMap(S.map);
   buildWorld();
   {const hm=$('hitm');hm._t=0;hm.style.opacity=0;}
-  G.ents=[];nextId=1;G.mode=S.mode;G.clock=0;G.bomb={state:'none'};G.planted=false;G.lastCall=0;radioClear();
+  G.ents=[];nextId=1;G.mode=S.mode;G.clock=0;G.bomb={state:'none'};G.planted=false;G.lastCall=0;G.bountyCr=0;radioClear();
   G.drops.forEach(d=>scene.remove(d.mesh));G.drops=[];clearNades();SMOKES.length=0;resetPools();
   const names=shuffle(NAMES.slice()),side=S.side;
   const p=makeEnt('You',ffaLike()?pick(['T','CT']):side,true);G.player=p;G.ents.push(p);
@@ -61,7 +61,7 @@ function resetEnt(e){
   e.alive=true;e.hp=100;e.act=null;e.reloadT=0;e.fireCd=.3;e.spray=0;e.scoped=false;e.y=0;e.vy=0;e.punch=0;e.vx=e.vz=0;
   e.crouch=false;e.crouchV=0;e.blindUntil=0;e.roundKills=0;e.hurtFrom=null;e.killer=null;
   e.target=null;e.path=null;e.pathKey='';e.hunt=null;e.route=null;e.guard=null;e.lookAt=null;e.wantAct=null;e.seenFor=0;e.roam=null;e.lastKnown=null;
-  e.sprayN=0;e.tagUntil=0;e.retreat=null;e.lurkSpot=null;e.blindDodge=0;e.pushSpot=null;
+  e.sprayN=0;e.tagUntil=0;e.retreat=null;e.lurkSpot=null;e.blindDodge=0;e.pushSpot=null;e.secondUsed=false;e.frostUntil=0;
   if(e.model){e.model.visible=true;e.model.rotation.set(0,0,0);e.model.userData.dead=null;if(e.model.userData.helmet)e.model.userData.helmet.visible=true;}
 }
 function applyLoadout(e,kind){
@@ -169,7 +169,7 @@ function matchOver(){
   if(G.mode==='arms'){const w=G.arWinner||G.ents.slice().sort((a,b)=>b.arLevel-a.arLevel)[0];title=w===G.player?'Victory <small>Golden knife kill</small>':`Defeat <small>${w.name} finished the ladder</small>`;}
   const p=G.player,won=G.mode==='horde'?G.wave>=5:G.mode==='aim'?G.aimScore>=2000:G.mode==='arms'?(G.arWinner===p):ffaLike()?dmLeader()===p:G.score[p.team]>G.score[other(p.team)];
   const rw=awardMatch(won,p);
-  $('overT').innerHTML=title;$('overBoard').innerHTML=`<p class="reward">+${rw.xp} XP · +${rw.rankUp?2:1} case${rw.rankUp?'s':''}${rw.rankUp?` · Ranked up to <b>${rw.rank}</b>`:''}</p>`+boardHTML();$('over').hidden=false;
+  $('overT').innerHTML=title;$('overBoard').innerHTML=`<p class="reward">+${rw.xp} XP · +${fmtCr(rw.cr+(G.bountyCr||0))} · +1 Clutch Case${rw.rankUp?` · Ranked up to <b>${rw.rank}</b> (bonus case)`:''}</p>`+boardHTML();$('over').hidden=false;
 }
 
 // ---------------- economy

@@ -91,7 +91,7 @@ function hud(dt){
   const w=curW(v),def=WPN[w.key];
   setT('amv',def.melee?'—':def.nade?String(v.nades[w.key]):String(w.mag));setT('rsv',def.melee||def.nade?'':' / '+w.res);
   const it=v===p&&!def.nade?equippedFor(w.key):null;
-  setT('wnv',(it?(it.st?'StatTrak™ ':'')+def.name+' | '+SKINS[it.skin].name+(it.st?' · '+it.kills:''):def.name)+(v.reloadT>0?' · reloading':''));
+  setT('wnv',(it?(it.st?'StatTrak™ ':'')+def.name+' | '+SKINS[it.skin].name+(it.st?' · '+it.kills:'')+' · '+ABIL[SKINS[it.skin].ab].name:def.name)+(v.reloadT>0?' · reloading':''));
   setT('loc',locationName(v.x,v.z));
   setT('nades',NADES.filter(k=>v.nades[k]>0).map(k=>`${WPN[k].short}${v.nades[k]>1?'×'+v.nades[k]:''}`).join(' · '));
   setT('bSwitch',shortName(curKey(p)));
@@ -185,37 +185,6 @@ $('xhFlags').addEventListener('click',ev=>{const b=ev.target.closest('button');i
 for(const[id,k]of[['xhSize','size'],['xhGap','gap'],['xhThick','thick']])$(id).addEventListener('input',e=>{S.xh[k]=+e.target.value;saveS();syncMenu();});
 // ---------------- rank, inventory, cases
 function renderRank(){const r=rankOf(INV.xp);$('rankCard').innerHTML=`<b>${r.name}</b><div class="bar"><i style="width:${Math.round(r.prog*100)}%"></i></div>${r.n>=RANKS.length-1?'Max rank':`${r.need} XP to ${RANKS[r.n+1]}`} · ${INV.matches} matches`;}
-function skinCard(it,eq){const s=SKINS[it.skin],b=document.createElement('button');b.className='card'+(eq?' eq':'');b.style.setProperty('--rc',RARITY[s.r].col);
-  const c=document.createElement('canvas');c.width=120;c.height=56;const g=c.getContext('2d');g.drawImage(skinCanvas(it.skin,it.float),0,0,128,60,0,0,120,56);
-  g.fillStyle='rgba(0,0,0,.35)';g.fillRect(0,40,120,16);g.fillStyle='#fff';g.font='600 11px sans-serif';g.fillText(s.w==='knife'?'★ '+KNIFE_NAMES[s.kt]:WPN[s.w].name,5,52);
-  b.appendChild(c);b.insertAdjacentHTML('beforeend',`<b>${it.st?'<span style="color:#cf6a32">ST™</span> ':''}${s.name}</b><span>${wearName(it.float)}${it.st?' · '+it.kills+' kills':''}</span>`);return b;}
-function renderInv(){
-  $('caseCount').textContent=`${INV.cases} case${INV.cases===1?'':'s'}`;$('bOpenCase').disabled=INV.cases<1;
-  const g=$('invGrid');g.innerHTML='';
-  if(!INV.items.length){g.innerHTML='<p class="desc">No skins yet. Open a case to get your first one.</p>';return;}
-  for(const it of INV.items.slice().sort((a,b)=>SKINS[b.skin].r-SKINS[a.skin].r||b.id-a.id)){const s=SKINS[it.skin],eq=INV.equip[s.w]===it.id;
-    const c=skinCard(it,eq);c.addEventListener('click',()=>{if(INV.equip[s.w]===it.id)delete INV.equip[s.w];else INV.equip[s.w]=it.id;saveInv();renderInv();resetViewmodel();});g.appendChild(c);}
-}
-let caseResult=null,reelAnim=0;
-function openCase(){
-  if(INV.cases<1)return;audioInit();INV.cases--;caseResult=rollCase();INV.items.push(caseResult);saveInv();
-  $('caseOvl').hidden=false;$('caseRes').innerHTML='';$('bCaseEquip').hidden=true;$('bCaseAgain').hidden=true;
-  const reel=$('reel');reel.innerHTML='';reel.style.transition='none';reel.style.transform='translateX(0)';
-  const N=46,WIN=40;for(let i=0;i<N;i++){const it=i===WIN?caseResult:rollCase();reel.appendChild(skinCard(it,false));}
-  INV.nextId=Math.max(...INV.items.map(i=>i.id))+1;saveInv();
-  const W=$('reel').parentElement.clientWidth,target=-(WIN*126+60-W/2+rnd(-48,48));
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{reel.style.transition='transform 6s cubic-bezier(.06,.55,.1,1)';reel.style.transform=`translateX(${target}px)`;}));
-  let lastIdx=-1;cancelAnimationFrame(reelAnim);
-  const tick=()=>{const m=new DOMMatrix(getComputedStyle(reel).transform);const idx=Math.floor((-m.m41+W/2)/126);if(idx!==lastIdx){lastIdx=idx;tone(1100,.025,.07,'square');}
-    if(Math.abs(m.m41-target)>.5)reelAnim=requestAnimationFrame(tick);};reelAnim=requestAnimationFrame(tick);
-  reel.addEventListener('transitionend',function done(){reel.removeEventListener('transitionend',done);cancelAnimationFrame(reelAnim);
-    const s=SKINS[caseResult.skin];$('caseRes').innerHTML=`<span style="color:${RARITY[s.r].col}">${skinTitle(caseResult)}</span><small>${RARITY[s.r].name} · float ${caseResult.float.toFixed(4)}</small>`;
-    tone(s.r>=3?1320:880,.4,.2,'triangle');if(s.r>=3)setTimeout(()=>tone(1760,.5,.2,'triangle'),180);
-    $('bCaseEquip').hidden=false;$('bCaseAgain').hidden=INV.cases<1;renderInv();});
-}
-$('bOpenCase').addEventListener('click',openCase);$('bCaseAgain').addEventListener('click',openCase);
-$('bCaseClose').addEventListener('click',()=>{$('caseOvl').hidden=true;renderInv();});
-$('bCaseEquip').addEventListener('click',()=>{if(!caseResult)return;INV.equip[SKINS[caseResult.skin].w]=caseResult.id;saveInv();resetViewmodel();$('caseOvl').hidden=true;renderInv();});
 for(const[id,key,num]of[['optMode','mode'],['optSide','side'],['optMates','mates',1],['optFoes','foes',1],['optLen','len'],['optDiffE','diffE'],['optDiffA','diffA'],
   ['optStyle','style'],['optLoadout','loadout'],['optNades','nades'],['optGfx','gfx'],['optAssist','assist'],['optFps','fps']])
   $(id).addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;S[key]=num?+b.dataset.v:b.dataset.v;saveS();syncMenu();if(key==='gfx')previewMap();});

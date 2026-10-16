@@ -100,9 +100,23 @@
         </div></div>
     </div>
     <div class="pane" data-pane="inv" hidden>
-      <div class="row"><b class="cases" id="caseCount"></b><button class="big" id="bOpenCase">Open case</button></div>
-      <p class="desc">Win or finish matches to earn cases. Tap a skin to equip it; it shows on your weapon in first person.</p>
-      <div class="inv" id="invGrid"></div>
+      <div class="row"><b class="cases" id="wallet"></b><button class="pbtn" id="bDaily">Claim daily bonus</button></div>
+      <div class="subtabs" id="invTabs"><button data-st="items" class="sel">Inventory</button><button data-st="cases">Cases</button><button data-st="up">Upgrader</button></div>
+      <div data-sp="items"><p class="desc">Every skin grants an ability while that weapon is in your hands. Tap one to inspect, equip or sell it.</p><div class="inv" id="invGrid"></div></div>
+      <div data-sp="cases" hidden><p class="desc">Earn credits from matches and sales, buy cases, then open them.</p><div class="casegrid" id="caseGrid"></div></div>
+      <div data-sp="up" hidden>
+        <div class="upg">
+          <div class="upcol"><div class="uplbl">Your stake</div><div class="upslot" id="upStake"></div>
+            <div class="seg" id="upMode"><button data-v="item">Skin</button><button data-v="cr">Credits</button></div>
+            <div class="row" id="upCrRow" hidden><input type="range" id="upCr" min="10" max="1000" step="10"><span class="rv" id="rvUpCr"></span></div>
+            <div class="inv mini" id="upPick"></div></div>
+          <div class="upmid"><canvas id="upWheel" width="240" height="240"></canvas><div class="upchance" id="upChance">—</div><button class="big" id="bUpgrade" disabled>Upgrade</button></div>
+          <div class="upcol"><div class="uplbl">Target</div><div class="upslot" id="upTarget"></div>
+            <div class="seg" id="upMult"><button data-m="1.5">×1.5</button><button data-m="2">×2</button><button data-m="3">×3</button><button data-m="5">×5</button><button data-m="10">×10</button></div>
+            <div class="inv mini" id="upTargets"></div></div>
+        </div>
+        <p class="desc" id="upMsg">Pick a stake and a target. The green slice is your chance to win; if you lose, the stake is gone.</p>
+      </div>
     </div>
     <div class="row"><button class="big" id="bStart">Play</button><span id="rot" hidden>Turn your phone sideways for the best view</span></div>
     <p class="hint touch-only">Left thumb moves. Drag the right side to look, hold Fire to shoot (you can drag while firing). Nade cycles grenades, Crouch steadies your aim.</p>
@@ -111,11 +125,14 @@
 </div>
 
 <div id="caseOvl" class="ovl" hidden>
-  <div class="panel casep"><h2>Clutch Case <button class="pbtn" id="bCaseClose">Close</button></h2>
+  <div class="panel casep"><h2><span id="caseTitle">Clutch Case</span> <button class="pbtn" id="bCaseClose">Close</button></h2>
     <div class="reelwin"><div class="reel" id="reel"></div><i class="reelmark"></i></div>
     <div class="caseres" id="caseRes"></div>
     <div class="btns"><button class="big" id="bCaseAgain">Open another</button><button class="pbtn" id="bCaseEquip">Equip</button></div></div>
 </div>
+<div id="itemOvl" class="ovl" hidden><div class="panel itemp"><h2><span id="itTitle"></span><button class="pbtn" id="bItClose">Close</button></h2>
+  <div class="itbody"><canvas id="itView"></canvas><div class="itinfo" id="itInfo"></div></div>
+  <div class="btns"><button class="big" id="bItEquip">Equip</button><button class="pbtn" id="bItSell">Sell</button><button class="pbtn" id="bItUp">Use in upgrader</button></div></div></div>
 <div id="buy" class="ovl" hidden>
   <div class="panel"><h2>Buy <small id="buyMoney">$800</small><button class="pbtn" id="bBuyClose">Close</button></h2><div id="buyList"></div></div>
 </div>

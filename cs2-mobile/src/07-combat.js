@@ -1,3 +1,7 @@
+// ---------------- skin abilities (player only, active for the weapon in hand)
+function abil(e,k){if(!e||!e.isPlayer)return 0;const it=equippedFor(curKey(e));if(!it)return 0;const s=SKINS[it.skin];return s&&s.ab===k?1+s.r*.22:0;}
+function magOf(e,w){const def=WPN[w.key];return def.mag?Math.round(def.mag*(1+.4*abil(e,'mag'))):0;}
+let chainBusy=false;
 // ---------------- weapons handling
 function eyeH(e){return e.y+EYE-CROUCH_DROP*e.crouchV;}
 function spreadOf(e){
@@ -5,19 +9,19 @@ function spreadOf(e){
   const spd=Math.hypot(e.vx,e.vz)/SPEED,air=e.y>.05?.15:0;
   let base=def.sniper?(e.scoped||!e.isPlayer?def.scoped:def.spread):def.spread;
   if(def.zoom&&!def.sniper&&e.scoped)base*=.6;
-  let s=base+def.move*clamp((spd-.3)/.7,0,1)+e.spray+air;
+  let s=(base+def.move*clamp((spd-.3)/.7,0,1)+e.spray+air)/(1+.3*abil(e,'steady'));
   if(e.crouchV>.5&&spd<.3)s*=.7;
   if(!e.isPlayer)s*=e.sk.acc;
   return s;
 }
-function startReload(e){const w=curW(e),def=WPN[w.key];if(def.melee||def.nade||e.reloadT>0||w.mag>=def.mag||w.res<=0)return;
-  e.reloadT=def.reload;e.scoped=false;if(e===viewer())sfxReload();}
+function startReload(e){const w=curW(e),def=WPN[w.key];if(def.melee||def.nade||e.reloadT>0||w.mag>=magOf(e,w)||w.res<=0)return;
+  e.reloadT=def.reload/(1+.35*abil(e,'reload'));e.reloadMax=e.reloadT;e.scoped=false;if(e===viewer())sfxReload();}
 function switchTo(e,slot){
   if(e.slot===slot)return;
   if(slot==='primary'&&!e.primary)return;if(slot==='secondary'&&!e.secondary)return;if(slot==='grenade'&&!nadeCount(e))return;
   if(slot==='grenade'&&(!e.nadeSel||!e.nades[e.nadeSel]))e.nadeSel=NADES.find(k=>e.nades[k]>0);
   if(e.slot==='primary'||e.slot==='secondary')e.lastGun=e.slot;
-  e.slot=slot;e.reloadT=0;e.fireCd=Math.max(e.fireCd,.4);e.scoped=false;e.act=null;
+  e.slot=slot;e.reloadT=0;e.fireCd=Math.max(e.fireCd,.4/(1+abil(e,'quick')));e.scoped=false;e.act=null;
 }
 function cycleWeapon(e){const order=['primary','secondary','knife','grenade'].filter(s=>(s!=='primary'||e.primary)&&(s!=='secondary'||e.secondary)&&(s!=='grenade'||nadeCount(e)));
   const i=order.indexOf(e.slot);switchTo(e,order[(i+1)%order.length]);}
@@ -46,7 +50,7 @@ function tryFire(e){
   w.mag--;e.fireCd=def.rof*(def.zoom&&!def.sniper&&e.scoped?1.12:1);
   const sp=spreadOf(e);
   const n=def.pellets||1;
-  const pat=sprayOffset(def,e.sprayN),comp=e.isPlayer?0:e.sk.comp;
+  const pat=sprayOffset(def,e.sprayN),comp=e.isPlayer?1-1/(1+.6*abil(e,'recoil')):e.sk.comp;
   for(let i=0;i<n;i++){const ps=def.pellets?def.spread*(e.isPlayer?1:e.sk.acc*.8)+sp*.25:sp;shoot(e,e.yaw+pat[0]*(1-comp)+gauss()*ps,e.pitch+pat[1]*(1-comp)+gauss()*ps*.6,def,i===0);}
   e.sprayN++;e.spray=Math.min(e.spray+def.recoil*(def.auto?.3:1),.09);e.punch=Math.min(e.punch+def.kick*.5,.2);
   if(isV&&!def.pellets||isV&&Math.random()<.5)ejectShell();
@@ -61,7 +65,7 @@ const tmpS=new THREE.Vector3();
 function shoot(e,a,p,def,first){
   const dx=Math.cos(a),dz=Math.sin(a),tp=Math.tan(clamp(p,-1.45,1.45)),eye=eyeH(e);
   const floorT=tp<-1e-4?eye/-tp:1e9,pens=[];
-  let tAcc=0,power=(def.pen||.5)*(def.pellets?.4:1),endT=260,nx=0,nz=0,ny=0;
+  const pc=abil(e,'pierce');let tAcc=0,power=(def.pen||.5)*(def.pellets?.4:1)*(1+pc*.6),endT=260,nx=0,nz=0,ny=0;
   for(let pass=0;pass<4;pass++){
     const t=tAcc+rayGrid(e.x+dx*tAcc,e.z+dz*tAcc,dx,dz,260-tAcc);nx=RNX;nz=RNZ;
     if(floorT<t){endT=floorT;nx=0;nz=0;ny=1;break;}
@@ -70,7 +74,7 @@ function shoot(e,a,p,def,first){
     let ex=t;while(ex-t<7&&cell(Math.floor((e.x+dx*ex)/TILE),Math.floor((e.z+dz*ex)/TILE))===c)ex+=.12;
     if((c===2&&y>CRATE_H)||(c===3&&y>BARREL_H)){tAcc=ex+.01;continue;}
     const cost=c===1?.6:.35,thin=c!==1||ex-t<TILE*1.15+.3;
-    if(thin&&power>cost&&(c!==1||def.pen>=.77)){power-=cost;pens.push({t:ex,mult:c===1?.35:.6});decal(e.x+dx*t,y,e.z+dz*t,nx,0,nz);decal(e.x+dx*ex,eye+tp*ex,e.z+dz*ex,-nx,0,-nz);
+    if(thin&&power>cost&&(c!==1||def.pen>=.77||pc)){power-=cost;pens.push({t:ex,mult:c===1?.35:.6});decal(e.x+dx*t,y,e.z+dz*t,nx,0,nz);decal(e.x+dx*ex,eye+tp*ex,e.z+dz*ex,-nx,0,-nz);
       puff(e.x+dx*ex,eye+tp*ex,e.z+dz*ex,0xb8a88a,.3,.4,.3,1.5);tAcc=ex+.01;continue;}
     endT=t;break;
   }
@@ -104,7 +108,9 @@ function shoot(e,a,p,def,first){
 }
 function damage(v,src,wk,hs,base,at){
   if(!v.alive||G.clock<v.protectUntil)return;
-  let d=base*(hs?4:1);const pen=WPN[wk]&&WPN[wk].pen!==undefined?WPN[wk].pen:.5;
+  let d=base*(hs?4:1);let pen=WPN[wk]&&WPN[wk].pen!==undefined?WPN[wk].pen:.5;
+  const own=src&&src.isPlayer&&curKey(src)===wk;
+  if(own){if(abil(src,'pierce'))pen=1;const ex=abil(src,'exec');if(ex&&v.hp<50)d*=1+.3*ex;const cr=abil(src,'crit');if(cr&&Math.random()<.1*cr){d*=2;hs=hs||false;notice('Lucky shot','#ffd34a');}}
   if(v.armor>0&&(!hs||v.helmet)){const ab=d*(1-pen);v.armor=Math.max(0,v.armor-ab*.5);d*=pen;}
   d=Math.min(d,v.hp);v.hp-=d;v.tagUntil=G.clock+.35;
   if(src&&G.dmgLog){const k=src.id+'>'+v.id,r=G.dmgLog[k]||(G.dmgLog[k]={d:0,h:0,t:0});r.d+=d;if(G.clock-r.t>.05)r.h++;r.t=G.clock;}
@@ -116,12 +122,23 @@ function damage(v,src,wk,hs,base,at){
   if(src&&src!==v){v.hurtFrom={x:src.x,z:src.z,t:G.clock};}
   if(v===G.player){G.shake=Math.min(.25,G.shake+.08);v.punch+=.02;}
   if(v.isPlayer===false&&src&&!v.target){v.lookAt={x:src.x,z:src.z};v.lookUntil=G.clock+3;v.hunt={x:src.x,z:src.z,until:G.clock+6};v.yaw=turn(v.yaw,Math.atan2(src.z-v.z,src.x-v.x),.6);}
+  if(v.hp<=0&&!v.secondUsed&&abil(v,'second')){v.hp=1;v.secondUsed=true;v.protectUntil=G.clock+.6;notice('Second Wind!','#6cc68a');tone(440,.4,.2,'triangle');}
+  if(own&&v.hp>0||own&&d>0){const a=abil(src,'vamp');if(a)src.hp=Math.min(100,src.hp+d*.18*a);
+    const fr=abil(src,'frost');if(fr){v.frostUntil=G.clock+1.4*fr;puff(v.x,1.2,v.z,0x9fdcff,.6,.5,.2,1.5);}
+    const ey=abil(src,'eagle');if(ey)v.spotT=G.clock+3*ey;
+    const bu=abil(src,'burn');if(bu&&G.clock-(src.burnT||0)>.9&&Math.random()<.4*bu){src.burnT=G.clock;startFire(v.x,v.z,src,1.7,2.4,6);}
+    const ch=abil(src,'chain');if(ch&&!chainBusy){let o2=null,bd=7;for(const o of G.ents){if(!o.alive||o===v||!foe(src,o))continue;const dd=d2(o,v);if(dd<bd){bd=dd;o2=o;}}
+      if(o2){chainBusy=true;tracer({x:v.x,y:1.3,z:v.z},{x:o2.x,y:1.3,z:o2.z});puff(o2.x,1.3,o2.z,0x8ad8ff,.5,.3,0,1);damage(o2,src,wk,false,d*.35*ch,null);chainBusy=false;}}}
   if(v.hp<=0)kill(v,src,wk,hs);
 }
 const STREAK=['','','Double kill','Triple kill','Quad kill','Ace!'];
 function kill(v,src,wk,hs){
   v.alive=false;v.hp=0;v.act=null;v.d++;v.diedAt=G.clock;v.killer=src;v.killWk=wk;v.scoped=false;
   if(G.mode==='aim'&&src===G.player){G.aimKills++;G.aimScore+=hs?200:100;if(hs)G.aimHS++;G.reacts.push(G.clock-v.bornAt);}
+  if(src&&foe(src,v)&&src.isPlayer&&curKey(src)===wk){
+    const bo=abil(src,'boom');if(bo){sfxBoom(v.x,v.z,false);boomLight.position.set(v.x,1.5,v.z);boomLight.intensity=3;for(let i=0;i<6;i++)puff(v.x+rnd(-1,1),rnd(.4,1.6),v.z+rnd(-1,1),i%2?0xffa040:0x6a6258,rnd(1,2),rnd(.4,.9),1.2,2.4);
+      setTimeout(()=>{for(const o of G.ents)if(o.alive&&foe(src,o)&&d2(o,v)<4.5&&los(v.x,v.z,o.x,o.z))damage(o,src,'he',false,55*bo,null);},0);}
+    const bt=G.mode==='aim'?0:abil(src,'bounty');if(bt){src.money=Math.min(16000,src.money+Math.round(300*bt));const c=Math.round(25*bt);INV.credits+=c;G.bountyCr=(G.bountyCr||0)+c;}}
   if(src&&foe(src,v)){src.k++;if(hs)src.hsk++;src.roundKills++;src.money=Math.min(16000,src.money+(WPN[wk]&&WPN[wk].reward||300));
     if(G.mode==='tdm')G.score[src.team]++;
     if(src===G.player){const n=src.roundKills;notice(n>=5&&!isDM()?'Ace!':STREAK[Math.min(n,4)]||(hs?'Headshot':''),n>=2?'':'#e5534b');if(n>=2)tone(520+n*90,.25,.2,'triangle');}}
@@ -205,10 +222,10 @@ function detonate(n){
 const flamePool=[];for(let i=0;i<70;i++){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:puffTex,color:0xff8a2a,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false,opacity:0}));s.visible=false;scene.add(s);flamePool.push({s,f:null,ox:0,oz:0,ph:0});}
 const fireLight=new THREE.PointLight(0xff7a2a,0,16,2);scene.add(fireLight);
 function clearFires(){if(G.fires)G.fires.length=0;for(const p of flamePool){p.s.visible=false;p.f=null;}}
-function startFire(x,z,owner){
+function startFire(x,z,owner,R=3.4,dur=7,maxN=22){
   // spread over walkable tiles around the impact point
-  const f={x,z,r:3.4,t0:G.clock,t1:G.clock+7,owner,tick:0};G.fires.push(f);
-  let n=0;for(const p of flamePool){if(p.f&&p.f.t1>G.clock)continue;if(n++>=22)break;
+  const f={x,z,r:R,t0:G.clock,t1:G.clock+dur,owner,tick:0};G.fires.push(f);
+  let n=0;for(const p of flamePool){if(p.f&&p.f.t1>G.clock)continue;if(n++>=maxN)break;
     let ox,oz;for(let k=0;k<6;k++){const a=rnd(0,TAU),r=Math.sqrt(Math.random())*f.r;ox=Math.cos(a)*r;oz=Math.sin(a)*r;if(!solid(Math.floor((x+ox)/TILE),Math.floor((z+oz)/TILE)))break;}
     p.f=f;p.ox=ox;p.oz=oz;p.ph=rnd(0,TAU);p.s.visible=true;}
 }
@@ -297,7 +314,7 @@ function groundAt(e){ // standing on crates or barrels after a jump
 }
 function moveEnt(e,mx,mz,run,dt){
   const def=WPN[curKey(e)];
-  let sp=SPEED*def.speed*run*(e.scoped?.55:1)*(e.isPlayer?1:.95)*(1-e.crouchV*.55)*(G.clock<e.tagUntil?.6:1)*(e.zombie?1.12:1);
+  let sp=SPEED*def.speed*run*(e.scoped?.55:1)*(e.isPlayer?1:.95)*(1-e.crouchV*.55)*(G.clock<e.tagUntil?.6:1)*(e.zombie?1.12:1)*(1+.1*abil(e,'fleet'))*(G.clock<(e.frostUntil||0)?.45:1);
   if(e.act||G.phase==='freeze'||!e.alive)sp=0;
   const air=e.y>e.ground+.05,k=air?2:14;
   e.vx+=(mx*sp-e.vx)*Math.min(1,dt*k);e.vz+=(mz*sp-e.vz)*Math.min(1,dt*k);
@@ -307,7 +324,7 @@ function moveEnt(e,mx,mz,run,dt){
   else e.y=e.ground;
   e.moving=Math.hypot(e.vx,e.vz);
   e.crouchV+=((e.crouch?1:0)-e.crouchV)*Math.min(1,dt*10);
-  if(!air&&e.moving>SPEED*.62&&e.crouchV<.3){e.stepAcc+=e.moving*dt;if(e.stepAcc>2.4){e.stepAcc=0;sfxStep(e.x,e.z,e===listener());if(!isDM()||Math.random()<.5)hearStep(e);}}
+  if(!air&&e.moving>SPEED*.62&&e.crouchV<.3){e.stepAcc+=e.moving*dt;if(e.stepAcc>2.4){e.stepAcc=0;if(!abil(e,'ghost')){sfxStep(e.x,e.z,e===listener());if(!isDM()||Math.random()<.5)hearStep(e);}}}
 }
 function hearStep(e){for(const b of G.ents){if(b.isPlayer||!b.alive||!foe(b,e)||b.target)continue;const d=d2(b,e);if(d>17)continue;
   b.lookAt={x:e.x,z:e.z};b.lookUntil=G.clock+2;if(Math.random()<.25*STYLE[S.style].hunt&&!b.act&&G.bomb.carrier!==b)b.hunt={x:e.x,z:e.z,until:G.clock+5};}}
@@ -318,8 +335,8 @@ function separate(){
 function commonUpdate(e,dt){
   e.fireCd-=dt;e.spray=Math.max(0,e.spray-dt*(e.isPlayer?.22:.3));e.punch*=Math.max(0,1-dt*8);
   {const def=WPN[curKey(e)];if(G.clock-e.lastShot>(def.rof||.1)*1.5)e.sprayN=Math.max(0,e.sprayN-dt*16);
-   const pt=sprayOffset(def,e.sprayN);e.vpY=lerp(e.vpY||0,pt[0]*.5,Math.min(1,dt*18));e.vpP=lerp(e.vpP||0,pt[1]*.5,Math.min(1,dt*18));}
-  if(e.reloadT>0){e.reloadT-=dt;if(e.reloadT<=0){e.reloadT=0;const w=curW(e),def=WPN[w.key];if(def.mag){const take=Math.min(def.mag-w.mag,w.res);w.mag+=take;w.res-=take;}}}
+   const pt=sprayOffset(def,e.sprayN).map(v=>v/(1+.6*abil(e,'recoil')));e.vpY=lerp(e.vpY||0,pt[0]*.5,Math.min(1,dt*18));e.vpP=lerp(e.vpP||0,pt[1]*.5,Math.min(1,dt*18));}
+  if(e.reloadT>0){e.reloadT-=dt;if(e.reloadT<=0){e.reloadT=0;const w=curW(e),def=WPN[w.key];if(def.mag){const take=Math.min(magOf(e,w)-w.mag,w.res);w.mag+=take;w.res-=take;}}}
   actUpdate(e,dt);
   if(!e.primary&&e.alive)for(let i=0;i<G.drops.length;i++){const d=G.drops[i];if(G.clock-d.t>.8&&d2(e,d)<1.2){e.primary={key:d.key,mag:d.mag,res:d.res};scene.remove(d.mesh);G.drops.splice(i,1);switchTo(e,'primary');if(e===G.player)showMsg(`Picked up ${WPN[d.key].name}`,1.5);break;}}
 }

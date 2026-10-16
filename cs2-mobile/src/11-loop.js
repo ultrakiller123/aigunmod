@@ -79,4 +79,4 @@ function frame(t){
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__cp={G,S,MAPS,loadMap,startMatch,WPN,update,tryFire};
+window.__cp={G,S,MAPS,loadMap,startMatch,WPN,update,tryFire};window.__inv=INV;window.__abil=abil;

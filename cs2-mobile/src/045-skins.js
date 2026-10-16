@@ -25,7 +25,46 @@ const SKIN_LIST=[
   ['k_bayo_tiger','knife','Tiger Tooth','tiger',['#f0a020','#3a2005'],4,'bayonet'],['k_kara_dam','knife','Damascus Steel','damascus',['#9aa0a6','#3a3f44'],4,'karambit'],
   ['k_bfly_web','knife','Crimson Web','web',['#8a0c10','#120404'],4,'butterfly'],['k_bayo_marble','knife','Marble Fade','marble',['#ffde3a','#e8364a','#2a5aff'],4,'bayonet'],
 ];
-const SKINS={};for(const[id,w,name,pat,cols,r,kt]of SKIN_LIST)SKINS[id]={id,w,name,pat,cols,r,kt};
+// Ember and Frost collections (field 7 = collection)
+SKIN_LIST.push(
+  ['ak_ember','ak','Ember Lotus','flame',['#1a0a06','#ff5a1a','#ffc040'],2,null,'ember'],['m4_cinder','m4','Cinderfall','fade',['#2a0a04','#c83a10','#ffb050'],1,null,'ember'],
+  ['de_magma','deagle','Magma Core','flame',['#120404','#ff2a00','#ffe060'],3,null,'ember'],['glock_ash','glock','Ashen','camo',['#3a3a3a','#6a5a50','#2a2420'],0,null,'ember'],
+  ['mp9_sunset','mp9','Sunset Strip','fade',['#ff9a40','#e04a6a','#5a2a7a'],1,null,'ember'],['awp_phoenix','awp','Phoenix Rising','flame',['#200400','#ff6a00','#fff080'],3,null,'ember'],
+  ['tec9_brand','tec9','Branded','neon',['#140808','#ff4020','#ffa030'],0,null,'ember'],['galil_kiln','galil','Kiln','marble',['#5a2a18','#ffb070'],1,null,'ember'],
+  ['ump_lava','ump','Lava Flow','marble',['#1a0a08','#ff5a20','#ffd060'],2,null,'ember'],['xm_furnace','xm1014','Furnace','carbon',['#1a1412','#3a2a24','#ff6a20'],0,null,'ember'],
+  ['k_kara_ember','knife','Ember Fade','fade',['#ffe040','#ff5010','#7a0a10'],4,'karambit','ember'],['k_bayo_magma','knife','Magma Damascus','damascus',['#ff5010','#2a0804'],4,'bayonet','ember'],
+  ['ak_glacier','ak','Glacier Bloom','marble',['#e8f6ff','#4aa0d8'],2,null,'frost'],['m4_frostbite','m4','Frostbite','tiger',['#d8eef8','#2a6a9a'],1,null,'frost'],
+  ['usp_aurora','usp','Aurora','fade',['#20e0a0','#3060ff','#a030ff'],3,null,'frost'],['awp_permafrost','awp','Permafrost','hex',['#06121c','#7fd8ff'],2,null,'frost'],
+  ['p90_snow','p90','Snowcap','digital',['#e8eef2','#9fb2c0','#5a6a78'],0,null,'frost'],['famas_tundra','famas','Tundra','camo',['#c8d4dc','#7a8a96','#eef4f8'],0,null,'frost'],
+  ['ssg_icicle','ssg08','Icicle','fade',['#ffffff','#9adfff','#2a6aaa'],1,null,'frost'],['nova_rime','nova','Rime','splash',['#dfeaf0','#4a8ab0','#ffffff'],0,null,'frost'],
+  ['aug_polar','aug','Polar Night','neon',['#04070e','#4ae3ff','#b0f0ff'],3,null,'frost'],['fs_crystal','fiveseven','Crystal','hex',['#0a1a2a','#9fe8ff'],1,null,'frost'],
+  ['k_bfly_frost','knife','Frost Doppler','doppler',['#020814','#30a0ff','#c0f4ff'],4,'butterfly','frost'],['k_kara_ice','knife','Ice Tiger','tiger',['#e0f6ff','#1a4a7a'],4,'karambit','frost']);
+// abilities: every skin grants one while that weapon is in your hands; rarer skins are stronger
+const ABIL={
+  quick:{name:'Quickdraw',desc:'Draw and swap weapons faster'},reload:{name:'Speed Loader',desc:'Reload faster'},
+  steady:{name:'Steady Hands',desc:'Tighter bullet spread'},vamp:{name:'Vampire',desc:'Heal from the damage you deal'},
+  boom:{name:'Explosive Rounds',desc:'Kills detonate and hurt nearby enemies'},burn:{name:'Incendiary Rounds',desc:'Hits set the ground on fire under the target'},
+  mag:{name:'Extended Mag',desc:'Bigger magazine'},fleet:{name:'Fleet Foot',desc:'Move faster while held'},
+  exec:{name:'Executioner',desc:'Extra damage to wounded enemies'},pierce:{name:'Armor Piercing',desc:'Ignore armor and punch through walls'},
+  bounty:{name:'Bounty Hunter',desc:'Bonus money and credits per kill'},crit:{name:'Lucky Shot',desc:'Chance to deal double damage'},
+  frost:{name:'Frost Rounds',desc:'Hits slow enemies to a crawl'},ghost:{name:'Ghost',desc:'Silent footsteps while held'},
+  second:{name:'Second Wind',desc:'Once per life, survive a lethal hit'},chain:{name:'Chain Lightning',desc:'Hits arc to a second enemy'},
+  recoil:{name:'Recoil Dampener',desc:'Much less spray climb'},eagle:{name:'Eagle Eye',desc:'Enemies you hit stay on your radar'},
+};
+const SKIN_AB={glock_sand:'fleet',usp_torque:'quick',p250_splash:'crit',mp9_rod:'fleet',ump_grid:'mag',nova_leaf:'steady',galil_cerb:'mag',famas_pulse:'recoil',
+  mac10_apple:'vamp',fs_copper:'pierce',negev_bulk:'recoil',ak_pin:'steady',m4_storm:'eagle',de_blaze:'burn',p90_trigon:'chain',ssg_moon:'exec',tec9_fuel:'burn',
+  xm_tranq:'frost',aug_cham:'ghost',sg_tiger:'crit',ak_viper:'chain',m4_tide:'reload',awp_dragon:'burn',de_scroll:'bounty',usp_koi:'ghost',glock_water:'vamp',
+  p90_carbon:'pierce',ak_jade:'vamp',awp_solar:'boom',m4_prism:'chain',usp_orbit:'crit',k_kara_fade:'second',k_bfly_dop:'fleet',k_bayo_tiger:'vamp',
+  k_kara_dam:'ghost',k_bfly_web:'second',k_bayo_marble:'bounty',ak_ember:'burn',m4_cinder:'burn',de_magma:'boom',glock_ash:'quick',mp9_sunset:'fleet',
+  awp_phoenix:'second',tec9_brand:'burn',galil_kiln:'mag',ump_lava:'burn',xm_furnace:'boom',k_kara_ember:'boom',k_bayo_magma:'vamp',ak_glacier:'frost',
+  m4_frostbite:'frost',usp_aurora:'eagle',awp_permafrost:'frost',p90_snow:'ghost',famas_tundra:'steady',ssg_icicle:'frost',nova_rime:'frost',aug_polar:'chain',
+  fs_crystal:'reload',k_bfly_frost:'frost',k_kara_ice:'second'};
+const SKINS={};for(const[id,w,name,pat,cols,r,kt,col]of SKIN_LIST)SKINS[id]={id,w,name,pat,cols,r,kt,col:col||'clutch',ab:SKIN_AB[id]||'steady'};
+const CASES={
+  clutch:{name:'Clutch Case',price:250,col:'#e3a23b',desc:'The original collection.',luck:1},
+  ember:{name:'Ember Case',price:550,col:'#ff5a1a',desc:'Fire-themed skins. Better odds for Classified and up.',luck:1.6},
+  frost:{name:'Frost Case',price:900,col:'#62c8ff',desc:'Ice-themed skins. Knives twice as likely.',luck:2.2},
+};
 const KNIFE_NAMES={karambit:'Karambit',butterfly:'Butterfly Knife',bayonet:'Bayonet'};
 const WEAR=[[.07,'Factory New'],[.15,'Minimal Wear'],[.38,'Field-Tested'],[.45,'Well-Worn'],[1,'Battle-Scarred']];
 const wearName=f=>WEAR.find(w=>f<w[0])[1];
@@ -79,16 +118,26 @@ function skinMat(it){
 }
 
 // inventory persistence
-const INV={cases:3,xp:0,items:[],equip:{},matches:0,nextId:1};
+const INV={cases:3,xp:0,items:[],equip:{},matches:0,nextId:1,credits:1500,bag:null,lastDaily:0,upgrades:0,upWins:0};
 try{Object.assign(INV,JSON.parse(localStorage.getItem('clutchpoint-inv')||'{}'));}catch(e){}
+if(!INV.bag){INV.bag={clutch:INV.cases||0,ember:0,frost:0};}
+INV.items=INV.items.filter(i=>SKINS[i.skin]);
 const saveInv=()=>{try{localStorage.setItem('clutchpoint-inv',JSON.stringify(INV));}catch(e){}};
 const invItem=id=>INV.items.find(i=>i.id===id);
 function equippedFor(key){const id=INV.equip[key];return id?invItem(id)||null:null;}
-function rollCase(){
-  let x=Math.random(),tier=0;for(let i=RARITY.length-1;i>=0;i--){x-=RARITY[i].odds;if(x<0){tier=i;break;}}
-  const pool=SKIN_LIST.filter(s=>s[5]===tier);const s=pick(pool);
-  return{id:INV.nextId++,skin:s[0],float:Math.min(.999,Math.pow(Math.random(),1.3)),st:Math.random()<.1,kills:0};
+function rollTier(luck){const w=RARITY.map((r,i)=>r.odds*(i>=2?luck:1)*(i===4&&luck>2?1.4:1));const tot=w.reduce((a,b)=>a+b,0);let x=Math.random()*tot;
+  for(let i=w.length-1;i>=0;i--){x-=w[i];if(x<0)return i;}return 0;}
+function makeItem(skinId,float){return{id:INV.nextId++,skin:skinId,float:float===undefined?Math.min(.999,Math.pow(Math.random(),1.3)):float,st:Math.random()<.1,kills:0};}
+function rollCase(type='clutch'){
+  const c=CASES[type]||CASES.clutch,tier=rollTier(c.luck);
+  let pool=Object.values(SKINS).filter(s=>s.r===tier&&s.col===type);if(!pool.length)pool=Object.values(SKINS).filter(s=>s.r===tier);
+  return makeItem(pick(pool).id);
 }
+const RVAL=[35,140,520,1700,7000],WVAL=[1.45,1.15,1,.82,.68];
+function skinBase(id){const s=SKINS[id];let h=0;for(const ch of id)h=(h*31+ch.charCodeAt(0))>>>0;return RVAL[s.r]*(.8+(h%50)/100)*(s.w==='awp'||s.w==='ak'||s.w==='m4'?1.25:1);}
+function itemValue(it){return Math.max(5,Math.round(skinBase(it.skin)*WVAL[WEAR.findIndex(w=>it.float<w[0])]*(it.st?1.6:1)));}
+function abilityOf(it){const s=SKINS[it.skin];return{k:s.ab,s:1+s.r*.22,...ABIL[s.ab]};}
+function upgradeChance(stake,target){return clamp(stake/target*.9,.01,.8);}
 // ranks
 const RANKS=['Silver I','Silver II','Silver III','Silver IV','Silver Elite','Silver Elite Master','Gold Nova I','Gold Nova II','Gold Nova III','Gold Nova Master',
   'Master Guardian I','Master Guardian II','Master Guardian Elite','Distinguished Master Guardian','Legendary Eagle','Legendary Eagle Master','Supreme Master First Class','The Global Elite'];
@@ -97,7 +146,8 @@ function rankOf(xp){let n=0;while(n<RANKS.length-1&&xp>=rankXP(n+1))n++;const lo
 function awardMatch(won,p){
   const before=rankOf(INV.xp).n;
   const xp=p.k*15+p.hsk*5+(won?220:70)+(isRounds()?G.score[p.team]*20:G.mode==='horde'?(G.wave||0)*60:G.mode==='aim'?(G.aimScore||0)/20:0);
-  INV.xp+=xp;INV.matches++;INV.cases++;
-  const after=rankOf(INV.xp).n;if(after>before)INV.cases++;
-  saveInv();return{xp,rankUp:after>before,rank:RANKS[after]};
+  const cr=G.mode==='aim'?Math.round(40+Math.min(p.k,40)*3):Math.round(p.k*20+(won?250:90)+p.hsk*5);
+  INV.xp+=xp;INV.matches++;INV.bag.clutch++;INV.credits+=cr;
+  const after=rankOf(INV.xp).n;if(after>before){INV.bag[after>=10?'frost':'ember']++;}
+  saveInv();return{xp,cr,rankUp:after>before,rank:RANKS[after]};
 }

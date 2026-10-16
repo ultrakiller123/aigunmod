@@ -22,12 +22,14 @@
   <div id="flash" class="hud"></div>
   <div id="dmg" class="hud"></div>
   <div id="notice" class="hud"></div>
+  <div id="ptsPop" class="hud"></div>
   <div id="center" class="hud"><div id="msg"></div><div id="prog" hidden><i></i></div></div>
   <div id="spec" class="hud" hidden></div>
   <div id="stats" class="hud">
     <div class="stat"><b id="hpv">100</b><span>Health</span></div>
     <div class="stat"><b id="arv">0</b><span>Armor</span></div>
     <div class="stat" id="money"><b id="mnv">$800</b><span id="mnl">Money</span></div>
+    <div class="stat" id="pts"><b id="ptv">0</b><span>Points</span></div>
   </div>
   <div id="ammo" class="hud"><div id="nades"></div><b id="amv">12</b><small id="rsv"> / 24</small><span id="wnv">USP-S</span></div>
   <div id="flashW" class="hud"></div>
@@ -41,6 +43,7 @@
   <button class="btn touch-only" id="bNade" hidden>Nade</button>
   <button class="btn" id="bUse" hidden>Plant</button>
   <button class="btn" id="bBuy">Buy</button>
+  <button class="btn" id="bUpg" hidden>Upgrade</button>
   <button class="btn" id="bPause" aria-label="Pause">II</button>
   <div id="banner" class="hud" hidden><b id="bnT"></b><span id="bnS"></span><span id="bnM"></span></div>
 </div>
@@ -104,23 +107,11 @@
       <div class="subtabs" id="invTabs"><button data-st="items" class="sel">Inventory</button><button data-st="cases">Cases</button><button data-st="up">Upgrader</button></div>
       <div data-sp="items"><p class="desc">Every skin grants an ability while that weapon is in your hands. Tap one to inspect, equip or sell it.</p><div class="inv" id="invGrid"></div></div>
       <div data-sp="cases" hidden><p class="desc">Earn credits from matches and sales, buy cases, then open them.</p><div class="casegrid" id="caseGrid"></div></div>
-      <div data-sp="up" hidden>
-        <div class="upg">
-          <div class="upcol"><div class="uplbl">Your stake</div><div class="upslot" id="upStake"></div>
-            <div class="seg" id="upMode"><button data-v="item">Skin</button><button data-v="cr">Credits</button></div>
-            <div class="row" id="upCrRow" hidden><input type="range" id="upCr" min="10" max="1000" step="10"><span class="rv" id="rvUpCr"></span></div>
-            <div class="inv mini" id="upPick"></div></div>
-          <div class="upmid"><canvas id="upWheel" width="240" height="240"></canvas><div class="upchance" id="upChance">—</div><button class="big" id="bUpgrade" disabled>Upgrade</button></div>
-          <div class="upcol"><div class="uplbl">Target</div><div class="upslot" id="upTarget"></div>
-            <div class="seg" id="upMult"><button data-m="1.5">×1.5</button><button data-m="2">×2</button><button data-m="3">×3</button><button data-m="5">×5</button><button data-m="10">×10</button></div>
-            <div class="inv mini" id="upTargets"></div></div>
-        </div>
-        <p class="desc" id="upMsg">Pick a stake and a target. The green slice is your chance to win; if you lose, the stake is gone.</p>
-      </div>
+
     </div>
     <div class="row"><button class="big" id="bStart">Play</button><span id="rot" hidden>Turn your phone sideways for the best view</span></div>
     <p class="hint touch-only">Left thumb moves. Drag the right side to look, hold Fire to shoot (you can drag while firing). Nade cycles grenades, Crouch steadies your aim.</p>
-    <p class="hint desk-only">Click to lock the mouse. WASD move, Shift walk, Ctrl or C crouch, Space jump, click fire, right-click scope, R reload, 1-4 weapons (4 cycles grenades), F inspect, G drop, E plant / defuse / pick up, B buy, Tab scores, Esc pause.</p>
+    <p class="hint desk-only">Click to lock the mouse. WASD move, Shift walk, Ctrl or C crouch, Space jump, click fire, right-click scope, R reload, 1-4 weapons (4 cycles grenades), F inspect, G drop, E plant / defuse / pick up, B buy, U upgrader, Tab scores, Esc pause.</p>
   </div>
 </div>
 
@@ -129,6 +120,22 @@
     <div class="reelwin"><div class="reel" id="reel"></div><i class="reelmark"></i></div>
     <div class="caseres" id="caseRes"></div>
     <div class="btns"><button class="big" id="bCaseAgain">Open another</button><button class="pbtn" id="bCaseEquip">Equip</button></div></div>
+</div>
+<div id="upOvl" class="ovl" hidden>
+  <div class="panel upp"><h2>Upgrader <small id="upBal"></small><button class="pbtn" id="bUpClose">Close</button></h2>
+    <div class="upg">
+      <div class="upcol"><div class="uplbl">Your stake</div><div class="upslot" id="upStake"></div>
+        <div class="row"><label for="upAdd">Add points</label><input type="range" id="upAdd" min="0" max="1000" step="10"><span class="rv" id="rvUpAdd"></span></div>
+        <div class="inv mini" id="upPick"></div></div>
+      <div class="upmid"><div class="wheelwrap"><canvas id="upWheel" width="260" height="260"></canvas><div class="upchance" id="upChance">—</div></div>
+        <div class="seg" id="upMult"><button data-m="1.5">×1.5</button><button data-m="2">×2</button><button data-m="3">×3</button><button data-m="5">×5</button><button data-m="10">×10</button></div>
+        <button class="big" id="bUpgrade" disabled>Upgrade</button><p class="desc upstat" id="upStat"></p></div>
+      <div class="upcol"><div class="uplbl">Target</div><div class="upslot" id="upTarget"></div>
+        <div class="seg" id="upSort"><button data-v="asc" class="sel">Cheapest first</button><button data-v="desc">Priciest first</button></div>
+        <div class="inv mini" id="upTargets"></div></div>
+    </div>
+    <p class="desc" id="upMsg">Stake a skin, points, or both. Pick a better skin as the target. The green arc is your exact chance; lose and the stake is gone.</p>
+  </div>
 </div>
 <div id="itemOvl" class="ovl" hidden><div class="panel itemp"><h2><span id="itTitle"></span><button class="pbtn" id="bItClose">Close</button></h2>
   <div class="itbody"><canvas id="itView"></canvas><div class="itinfo" id="itInfo"></div></div>

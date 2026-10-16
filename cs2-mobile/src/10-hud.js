@@ -101,6 +101,8 @@ function hud(dt){
   $('scope').hidden=!(zoom&&zoom<.4);$('reddot').hidden=!(zoom&&zoom>=.4);
   const usable=canPlant(p)||canDefuse(p);$('bUse').hidden=!usable;setT('bUse',canPlant(p)?'Plant':'Defuse');
   $('bBuy').hidden=!canBuy();
+  const uo=G.mode!=='aim'&&p.alive&&upgraderOpenNow();$('bUpg').hidden=!uo;setT('ptv',Math.round(INV.credits).toLocaleString('en-US'));
+  if(!$('upOvl').hidden&&hud._uo!==uo)renderUpgrader();hud._uo=uo;
   const xs=$('xh');xs.hidden=!!zoom||!v.alive;
   if(!xs.hidden)styleXh(xs,S.xh.dynamic?Math.min(40,spreadOf(v)*innerHeight*.9):0);
   $('vig').hidden=S.vignette!=='on';

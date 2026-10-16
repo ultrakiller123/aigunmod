@@ -42,7 +42,7 @@ function hordeUpdate(dt){
   else{
     G.spawnT-=dt;const live=G.ents.filter(e=>e.zombie&&e.alive).length;
     if(G.toSpawn>0&&live<Math.min(12,4+G.wave)&&G.spawnT<=0){spawnZombie();G.spawnT=rnd(.4,1.4);}
-    if(G.toSpawn<=0&&live===0){G.waveState='break';G.waveT=10;notice(`Wave ${G.wave} cleared`,'#6cc68a');tone(660,.5,.2,'triangle');
+    if(G.toSpawn<=0&&live===0){G.waveState='break';G.waveT=10;notice(`Wave ${G.wave} cleared`,'#6cc68a');addPts(100+G.wave*40,'wave cleared');saveInv();tone(660,.5,.2,'triangle');
       for(const h of humans){h.money=Math.min(16000,h.money+1000+G.wave*250);if(!h.alive){resetEnt(h);applyHumanHorde(h);}else h.hp=Math.min(100,h.hp+30);}}
   }
 }

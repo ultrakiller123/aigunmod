@@ -68,6 +68,7 @@ addEventListener('keydown',ev=>{
   if(k==='q'&&p.alive)cycleWeapon(p);
   if(k==='f'&&p.alive)VM.inspect=2.4;
   if(k==='g'&&p.alive)dropCurrent(p);
+  if(k==='u'&&G.mode!=='aim'){$('upOvl').hidden?openUpgrader():closeUpgrader();}
   if(k==='b'){$('buy').hidden?openBuy():(closeBuy(),requestLock());}
   if(k===' '){ev.preventDefault();jumpReq=true;}
   if(k==='e'){if(!useHeld)useEdge=true;useHeld=true;}

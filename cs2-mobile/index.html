@@ -63,7 +63,14 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--ground);color:va
 .swatches button::before{content:"";display:inline-block;width:10px;height:10px;background:var(--c);margin-right:6px;vertical-align:-1px}
 #xh i{background:var(--xc,#9ff59a)}#xh.nooutline i{box-shadow:none}
 #xh.circle .c{width:var(--cs);height:var(--cs);left:calc(var(--cs)/-2);top:calc(var(--cs)/-2);background:none!important;border:var(--xt) solid var(--xc);border-radius:50%}
-#itemOvl{background:rgba(10,12,15,.88)}
+#itemOvl,#upOvl{background:rgba(10,12,15,.9)}#upOvl{z-index:5}
+.upp{max-width:980px}.upp h2 small{margin-right:auto;margin-left:12px}
+.wheelwrap{position:relative;width:180px;height:180px}.wheelwrap canvas{width:100%;height:100%}.wheelwrap .upchance{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;margin-top:42px;font-size:20px}
+.upstat{text-align:center;margin:0}
+#pts b{color:var(--t)}
+#ptsPop{right:calc(var(--sr) + 20px);top:44%;font:700 18px var(--f-hud);color:var(--t);opacity:0;transition:opacity .3s,transform .6s;transform:translateY(0)}
+#ptsPop.on{opacity:1;transform:translateY(-14px)}
+#bUpg{left:calc(var(--sl) + 226px);top:calc(var(--st) + 8px);width:78px;height:40px;border-radius:10px;border-color:var(--t);color:var(--t)}
 .subtabs{display:flex;gap:2px}.subtabs button{font:700 12px var(--f-hud);letter-spacing:.08em;text-transform:uppercase;background:rgba(239,233,220,.06);border:1px solid var(--line);color:var(--dim);padding:6px 12px;cursor:pointer}
 .subtabs button.sel{color:#111;background:var(--t);border-color:var(--t)}
 .card .abl{color:var(--t);font:600 10px var(--f-hud);letter-spacing:.06em;text-transform:uppercase}.st{color:#cf6a32}
@@ -76,7 +83,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--ground);color:va
 .upcol{display:flex;flex-direction:column;gap:6px;min-width:0}.uplbl{font:600 11px var(--f-body);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
 .upslot{min-height:100px;border:1px dashed var(--line);padding:4px;display:flex;align-items:center;justify-content:center}.upslot .card{width:130px}
 .inv.mini{max-height:26vh;grid-template-columns:repeat(auto-fill,minmax(104px,1fr))}
-.upmid{display:flex;flex-direction:column;align-items:center;gap:6px}#upWheel{width:150px;height:150px}
+.upmid{display:flex;flex-direction:column;align-items:center;gap:6px}
 .upchance{font:700 22px var(--f-hud);color:var(--ok)}.crstake{font:700 20px var(--f-hud);color:var(--ok)}
 .win{color:var(--ok);font-weight:700}.lose{color:var(--hot);font-weight:700}
 .itemp{max-width:720px}.itbody{display:flex;gap:14px;flex-wrap:wrap}#itView{flex:1 1 260px;min-width:0;height:200px;background:radial-gradient(circle,#2a2e36,#121418);touch-action:none;cursor:grab}
@@ -224,12 +231,14 @@ tr.me td{background:rgba(239,233,220,.08)} tr.dead td{opacity:.45}
   <div id="flash" class="hud"></div>
   <div id="dmg" class="hud"></div>
   <div id="notice" class="hud"></div>
+  <div id="ptsPop" class="hud"></div>
   <div id="center" class="hud"><div id="msg"></div><div id="prog" hidden><i></i></div></div>
   <div id="spec" class="hud" hidden></div>
   <div id="stats" class="hud">
     <div class="stat"><b id="hpv">100</b><span>Health</span></div>
     <div class="stat"><b id="arv">0</b><span>Armor</span></div>
     <div class="stat" id="money"><b id="mnv">$800</b><span id="mnl">Money</span></div>
+    <div class="stat" id="pts"><b id="ptv">0</b><span>Points</span></div>
   </div>
   <div id="ammo" class="hud"><div id="nades"></div><b id="amv">12</b><small id="rsv"> / 24</small><span id="wnv">USP-S</span></div>
   <div id="flashW" class="hud"></div>
@@ -243,6 +252,7 @@ tr.me td{background:rgba(239,233,220,.08)} tr.dead td{opacity:.45}
   <button class="btn touch-only" id="bNade" hidden>Nade</button>
   <button class="btn" id="bUse" hidden>Plant</button>
   <button class="btn" id="bBuy">Buy</button>
+  <button class="btn" id="bUpg" hidden>Upgrade</button>
   <button class="btn" id="bPause" aria-label="Pause">II</button>
   <div id="banner" class="hud" hidden><b id="bnT"></b><span id="bnS"></span><span id="bnM"></span></div>
 </div>
@@ -306,23 +316,11 @@ tr.me td{background:rgba(239,233,220,.08)} tr.dead td{opacity:.45}
       <div class="subtabs" id="invTabs"><button data-st="items" class="sel">Inventory</button><button data-st="cases">Cases</button><button data-st="up">Upgrader</button></div>
       <div data-sp="items"><p class="desc">Every skin grants an ability while that weapon is in your hands. Tap one to inspect, equip or sell it.</p><div class="inv" id="invGrid"></div></div>
       <div data-sp="cases" hidden><p class="desc">Earn credits from matches and sales, buy cases, then open them.</p><div class="casegrid" id="caseGrid"></div></div>
-      <div data-sp="up" hidden>
-        <div class="upg">
-          <div class="upcol"><div class="uplbl">Your stake</div><div class="upslot" id="upStake"></div>
-            <div class="seg" id="upMode"><button data-v="item">Skin</button><button data-v="cr">Credits</button></div>
-            <div class="row" id="upCrRow" hidden><input type="range" id="upCr" min="10" max="1000" step="10"><span class="rv" id="rvUpCr"></span></div>
-            <div class="inv mini" id="upPick"></div></div>
-          <div class="upmid"><canvas id="upWheel" width="240" height="240"></canvas><div class="upchance" id="upChance">—</div><button class="big" id="bUpgrade" disabled>Upgrade</button></div>
-          <div class="upcol"><div class="uplbl">Target</div><div class="upslot" id="upTarget"></div>
-            <div class="seg" id="upMult"><button data-m="1.5">×1.5</button><button data-m="2">×2</button><button data-m="3">×3</button><button data-m="5">×5</button><button data-m="10">×10</button></div>
-            <div class="inv mini" id="upTargets"></div></div>
-        </div>
-        <p class="desc" id="upMsg">Pick a stake and a target. The green slice is your chance to win; if you lose, the stake is gone.</p>
-      </div>
+
     </div>
     <div class="row"><button class="big" id="bStart">Play</button><span id="rot" hidden>Turn your phone sideways for the best view</span></div>
     <p class="hint touch-only">Left thumb moves. Drag the right side to look, hold Fire to shoot (you can drag while firing). Nade cycles grenades, Crouch steadies your aim.</p>
-    <p class="hint desk-only">Click to lock the mouse. WASD move, Shift walk, Ctrl or C crouch, Space jump, click fire, right-click scope, R reload, 1-4 weapons (4 cycles grenades), F inspect, G drop, E plant / defuse / pick up, B buy, Tab scores, Esc pause.</p>
+    <p class="hint desk-only">Click to lock the mouse. WASD move, Shift walk, Ctrl or C crouch, Space jump, click fire, right-click scope, R reload, 1-4 weapons (4 cycles grenades), F inspect, G drop, E plant / defuse / pick up, B buy, U upgrader, Tab scores, Esc pause.</p>
   </div>
 </div>
 
@@ -331,6 +329,22 @@ tr.me td{background:rgba(239,233,220,.08)} tr.dead td{opacity:.45}
     <div class="reelwin"><div class="reel" id="reel"></div><i class="reelmark"></i></div>
     <div class="caseres" id="caseRes"></div>
     <div class="btns"><button class="big" id="bCaseAgain">Open another</button><button class="pbtn" id="bCaseEquip">Equip</button></div></div>
+</div>
+<div id="upOvl" class="ovl" hidden>
+  <div class="panel upp"><h2>Upgrader <small id="upBal"></small><button class="pbtn" id="bUpClose">Close</button></h2>
+    <div class="upg">
+      <div class="upcol"><div class="uplbl">Your stake</div><div class="upslot" id="upStake"></div>
+        <div class="row"><label for="upAdd">Add points</label><input type="range" id="upAdd" min="0" max="1000" step="10"><span class="rv" id="rvUpAdd"></span></div>
+        <div class="inv mini" id="upPick"></div></div>
+      <div class="upmid"><div class="wheelwrap"><canvas id="upWheel" width="260" height="260"></canvas><div class="upchance" id="upChance">—</div></div>
+        <div class="seg" id="upMult"><button data-m="1.5">×1.5</button><button data-m="2">×2</button><button data-m="3">×3</button><button data-m="5">×5</button><button data-m="10">×10</button></div>
+        <button class="big" id="bUpgrade" disabled>Upgrade</button><p class="desc upstat" id="upStat"></p></div>
+      <div class="upcol"><div class="uplbl">Target</div><div class="upslot" id="upTarget"></div>
+        <div class="seg" id="upSort"><button data-v="asc" class="sel">Cheapest first</button><button data-v="desc">Priciest first</button></div>
+        <div class="inv mini" id="upTargets"></div></div>
+    </div>
+    <p class="desc" id="upMsg">Stake a skin, points, or both. Pick a better skin as the target. The green arc is your exact chance; lose and the stake is gone.</p>
+  </div>
 </div>
 <div id="itemOvl" class="ovl" hidden><div class="panel itemp"><h2><span id="itTitle"></span><button class="pbtn" id="bItClose">Close</button></h2>
   <div class="itbody"><canvas id="itView"></canvas><div class="itinfo" id="itInfo"></div></div>
@@ -1119,7 +1133,7 @@ const ABIL={
   boom:{name:'Explosive Rounds',desc:'Kills detonate and hurt nearby enemies'},burn:{name:'Incendiary Rounds',desc:'Hits set the ground on fire under the target'},
   mag:{name:'Extended Mag',desc:'Bigger magazine'},fleet:{name:'Fleet Foot',desc:'Move faster while held'},
   exec:{name:'Executioner',desc:'Extra damage to wounded enemies'},pierce:{name:'Armor Piercing',desc:'Ignore armor and punch through walls'},
-  bounty:{name:'Bounty Hunter',desc:'Bonus money and credits per kill'},crit:{name:'Lucky Shot',desc:'Chance to deal double damage'},
+  bounty:{name:'Bounty Hunter',desc:'Bonus money and points per kill'},crit:{name:'Lucky Shot',desc:'Chance to deal double damage'},
   frost:{name:'Frost Rounds',desc:'Hits slow enemies to a crawl'},ghost:{name:'Ghost',desc:'Silent footsteps while held'},
   second:{name:'Second Wind',desc:'Once per life, survive a lethal hit'},chain:{name:'Chain Lightning',desc:'Hits arc to a second enemy'},
   recoil:{name:'Recoil Dampener',desc:'Much less spray climb'},eagle:{name:'Eagle Eye',desc:'Enemies you hit stay on your radar'},
@@ -1515,7 +1529,7 @@ function startMatch(){
   if(MAPID!==S.map)loadMap(S.map);
   buildWorld();
   {const hm=$('hitm');hm._t=0;hm.style.opacity=0;}
-  G.ents=[];nextId=1;G.mode=S.mode;G.clock=0;G.bomb={state:'none'};G.planted=false;G.lastCall=0;G.bountyCr=0;radioClear();
+  G.ents=[];nextId=1;G.mode=S.mode;G.clock=0;G.bomb={state:'none'};G.planted=false;G.lastCall=0;G.matchPts=0;G.matchId=(G.matchId||0)+1;radioClear();$('upOvl').hidden=true;UPG.spinning=false;
   G.drops.forEach(d=>scene.remove(d.mesh));G.drops=[];clearNades();SMOKES.length=0;resetPools();
   const names=shuffle(NAMES.slice()),side=S.side;
   const p=makeEnt('You',ffaLike()?pick(['T','CT']):side,true);G.player=p;G.ents.push(p);
@@ -1582,7 +1596,7 @@ function newRound(){
   for(const e of G.ents)if(e.team!=='T')e.lurk=false;
   $('banner').hidden=true;closeBuy();radioClear();
   showMsg(`Round ${G.round}`,2);
-  setTimeout(()=>{if(G.state!=='play'||G.phase==='end')return;const mates=G.ents.filter(e=>e.team===G.player.team&&!e.isPlayer);if(!mates.length)return;
+  const mid=G.matchId;setTimeout(()=>{if(G.state!=='play'||G.phase==='end'||G.matchId!==mid)return;const mates=G.ents.filter(e=>e.team===G.player.team&&!e.isPlayer);if(!mates.length)return;
     const m=pick(mates),eco=teamEco(m.team);
     if(m.team==='T')radio(m,eco==='eco'?`Eco round, save if it looks bad. Let's hit ${G.siteTarget}.`:`Let's go ${G.siteTarget}, stick together.`);
     else radio(m,eco==='eco'?'Saving this round, play for picks.':`I'll hold ${m.area==='M'?'mid':m.area}.`);},FREEZE*1000-1500);
@@ -1619,6 +1633,7 @@ function endRound(winner,reason){
   const mvp=G.ents.filter(e=>e.team===winner).sort((a,b)=>b.roundKills-a.roundKills)[0];
   $('bnM').textContent=(mvp&&mvp.roundKills?`MVP: ${mvp.name} · ${mvp.roundKills} kill${mvp.roundKills>1?'s':''} · `:'')+(G.mode==='defuse'?`You earned $${G.player.money-before}`:'');
   $('banner').hidden=false;
+  addPts(winner===G.player.team?200:100,winner===G.player.team?'round won':'round lost');if(mvp===G.player&&mvp.roundKills)setTimeout(()=>addPts(100,'MVP'),900);saveInv();
   tone(winner===G.player.team?660:220,.6,.25,'triangle');
   closeBuy();
 }
@@ -1636,7 +1651,7 @@ function checkDMEnd(){
   if(done)matchOver();
 }
 function matchOver(){
-  G.state='over';$('hud').hidden=true;exitLock();closeBuy();
+  G.state='over';$('hud').hidden=true;exitLock();closeBuy();if(!UPG.spinning)$('upOvl').hidden=true;
   let title;
   if(ffaLike()){const l=dmLeader();title=l===G.player?'Victory <small>You topped the board</small>':`Defeat <small>${l.name} won with ${l.k}</small>`;}
   else{const win=G.score.T>G.score.CT?'T':G.score.CT>G.score.T?'CT':null,me=win===G.player.team;
@@ -1647,7 +1662,7 @@ function matchOver(){
   if(G.mode==='arms'){const w=G.arWinner||G.ents.slice().sort((a,b)=>b.arLevel-a.arLevel)[0];title=w===G.player?'Victory <small>Golden knife kill</small>':`Defeat <small>${w.name} finished the ladder</small>`;}
   const p=G.player,won=G.mode==='horde'?G.wave>=5:G.mode==='aim'?G.aimScore>=2000:G.mode==='arms'?(G.arWinner===p):ffaLike()?dmLeader()===p:G.score[p.team]>G.score[other(p.team)];
   const rw=awardMatch(won,p);
-  $('overT').innerHTML=title;$('overBoard').innerHTML=`<p class="reward">+${rw.xp} XP · +${fmtCr(rw.cr+(G.bountyCr||0))} · +1 Clutch Case${rw.rankUp?` · Ranked up to <b>${rw.rank}</b> (bonus case)`:''}</p>`+boardHTML();$('over').hidden=false;
+  $('overT').innerHTML=title;$('overBoard').innerHTML=`<p class="reward">+${rw.xp} XP · +${fmtCr(G.matchPts||0)} earned in match · +${fmtCr(rw.cr)} match bonus · +1 Clutch Case${rw.rankUp?` · Ranked up to <b>${rw.rank}</b> (bonus case)`:''}</p>`+boardHTML();$('over').hidden=false;
 }
 
 // ---------------- economy
@@ -1765,7 +1780,7 @@ function hordeUpdate(dt){
   else{
     G.spawnT-=dt;const live=G.ents.filter(e=>e.zombie&&e.alive).length;
     if(G.toSpawn>0&&live<Math.min(12,4+G.wave)&&G.spawnT<=0){spawnZombie();G.spawnT=rnd(.4,1.4);}
-    if(G.toSpawn<=0&&live===0){G.waveState='break';G.waveT=10;notice(`Wave ${G.wave} cleared`,'#6cc68a');tone(660,.5,.2,'triangle');
+    if(G.toSpawn<=0&&live===0){G.waveState='break';G.waveT=10;notice(`Wave ${G.wave} cleared`,'#6cc68a');addPts(100+G.wave*40,'wave cleared');saveInv();tone(660,.5,.2,'triangle');
       for(const h of humans){h.money=Math.min(16000,h.money+1000+G.wave*250);if(!h.alive){resetEnt(h);applyHumanHorde(h);}else h.hp=Math.min(100,h.hp+30);}}
   }
 }
@@ -1937,7 +1952,8 @@ function kill(v,src,wk,hs){
   if(src&&foe(src,v)&&src.isPlayer&&curKey(src)===wk){
     const bo=abil(src,'boom');if(bo){sfxBoom(v.x,v.z,false);boomLight.position.set(v.x,1.5,v.z);boomLight.intensity=3;for(let i=0;i<6;i++)puff(v.x+rnd(-1,1),rnd(.4,1.6),v.z+rnd(-1,1),i%2?0xffa040:0x6a6258,rnd(1,2),rnd(.4,.9),1.2,2.4);
       setTimeout(()=>{for(const o of G.ents)if(o.alive&&foe(src,o)&&d2(o,v)<4.5&&los(v.x,v.z,o.x,o.z))damage(o,src,'he',false,55*bo,null);},0);}
-    const bt=G.mode==='aim'?0:abil(src,'bounty');if(bt){src.money=Math.min(16000,src.money+Math.round(300*bt));const c=Math.round(25*bt);INV.credits+=c;G.bountyCr=(G.bountyCr||0)+c;}}
+    const bt=G.mode==='aim'?0:abil(src,'bounty');if(bt){src.money=Math.min(16000,src.money+Math.round(300*bt));addPts(25*bt,'bounty');}}
+  if(src===G.player&&foe(src,v))addPts(G.mode==='aim'?5:50+(hs?25:0),hs?'headshot':'kill');
   if(src&&foe(src,v)){src.k++;if(hs)src.hsk++;src.roundKills++;src.money=Math.min(16000,src.money+(WPN[wk]&&WPN[wk].reward||300));
     if(G.mode==='tdm')G.score[src.team]++;
     if(src===G.player){const n=src.roundKills;notice(n>=5&&!isDM()?'Ace!':STREAK[Math.min(n,4)]||(hs?'Headshot':''),n>=2?'':'#e5534b');if(n>=2)tone(520+n*90,.25,.2,'triangle');}}
@@ -1948,7 +1964,7 @@ function kill(v,src,wk,hs){
     fling(cl,v.x,eyeH(v)+.15,v.z,Math.cos(v.yaw+PI)*rnd(1,3)+rnd(-1,1),rnd(3,5),Math.sin(v.yaw+PI)*rnd(1,3)+rnd(-1,1),5);}
   if(!isDM()){for(const m of G.ents)if(m!==v&&m.alive&&!m.isPlayer&&!foe(m,v)&&!m.target&&src&&d2(m,v)<30&&Math.random()<.65*STYLE[S.style].hunt)m.hunt={x:src.x,z:src.z,until:G.clock+8};
     if(src&&!src.isPlayer&&src.team===G.player.team&&!ffaLike()&&Math.random()<.5)radio(src,pick(['Got him!','One down.','Enemy down.','Tagged and bagged.']));
-    if(v.team===G.player.team&&!v.isPlayer&&!ffaLike()){const left=alive(other(v.team)).length;if(left)setTimeout(()=>{const m=alive(v.team).find(x=>!x.isPlayer);if(m)radio(m,`${v.name} is down at ${locationName(v.x,v.z)||'their spot'}. ${left} left.`);},700);}}
+    if(v.team===G.player.team&&!v.isPlayer&&!ffaLike()){const left=alive(other(v.team)).length;if(left){const mid=G.matchId,rd=G.round;setTimeout(()=>{if(G.matchId!==mid||G.round!==rd)return;const m=alive(v.team).find(x=>!x.isPlayer);if(m)radio(m,`${v.name} is down at ${locationName(v.x,v.z)||'their spot'}. ${left} left.`);},700);}}}
   if(v.primary){dropWeapon(v,v.primary);v.primary=null;}
   if(G.bomb.state==='carried'&&G.bomb.carrier===v){G.bomb.state='dropped';G.bomb.x=v.x;G.bomb.z=v.z;G.bomb.carrier=null;if(v.team===G.player.team)showMsg('The bomb has been dropped',2);}
   if(v.model){const u=v.model.userData,from=src?Math.atan2(v.z-src.z,v.x-src.x):v.yaw+PI;const rel=angDiff(v.yaw,from);
@@ -2378,6 +2394,7 @@ addEventListener('keydown',ev=>{
   if(k==='q'&&p.alive)cycleWeapon(p);
   if(k==='f'&&p.alive)VM.inspect=2.4;
   if(k==='g'&&p.alive)dropCurrent(p);
+  if(k==='u'&&G.mode!=='aim'){$('upOvl').hidden?openUpgrader():closeUpgrader();}
   if(k==='b'){$('buy').hidden?openBuy():(closeBuy(),requestLock());}
   if(k===' '){ev.preventDefault();jumpReq=true;}
   if(k==='e'){if(!useHeld)useEdge=true;useHeld=true;}
@@ -2526,6 +2543,8 @@ function hud(dt){
   $('scope').hidden=!(zoom&&zoom<.4);$('reddot').hidden=!(zoom&&zoom>=.4);
   const usable=canPlant(p)||canDefuse(p);$('bUse').hidden=!usable;setT('bUse',canPlant(p)?'Plant':'Defuse');
   $('bBuy').hidden=!canBuy();
+  const uo=G.mode!=='aim'&&p.alive&&upgraderOpenNow();$('bUpg').hidden=!uo;setT('ptv',Math.round(INV.credits).toLocaleString('en-US'));
+  if(!$('upOvl').hidden&&hud._uo!==uo)renderUpgrader();hud._uo=uo;
   const xs=$('xh');xs.hidden=!!zoom||!v.alive;
   if(!xs.hidden)styleXh(xs,S.xh.dynamic?Math.min(40,spreadOf(v)*innerHeight*.9):0);
   $('vig').hidden=S.vignette!=='on';
@@ -2636,7 +2655,7 @@ $('bQuit').addEventListener('click',toMenu);$('bMenu2').addEventListener('click'
 document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseGame();});
 
 // ---------------- inventory, case shop, upgrader
-const fmtCr=n=>Math.round(n).toLocaleString('en-US')+' CR';
+const fmtCr=n=>Math.round(n).toLocaleString('en-US')+' PTS';
 const weaponLabel=s=>s.w==='knife'?'★ '+KNIFE_NAMES[s.kt]:WPN[s.w].name;
 function skinCard(it,eq,opts={}){
   const s=SKINS[it.skin],b=document.createElement('button');b.className='card'+(eq?' eq':'')+(opts.sel?' picked':'');b.style.setProperty('--rc',RARITY[s.r].col);
@@ -2660,9 +2679,8 @@ function renderInv(){
     if(!INV.items.length){g.innerHTML='<p class="desc">No skins yet. Open a case to get your first one.</p>';return;}
     for(const it of INV.items.slice().sort((a,b)=>itemValue(b)-itemValue(a))){const s=SKINS[it.skin],c=skinCard(it,INV.equip[s.w]===it.id);c.addEventListener('click',()=>openItem(it));g.appendChild(c);}}
   else if(invTab==='cases')renderCases();
-  else renderUpgrader();
 }
-$('invTabs').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;invTab=b.dataset.st;renderInv();});
+$('invTabs').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;if(b.dataset.st==='up'){openUpgrader();return;}invTab=b.dataset.st;renderInv();});
 $('bDaily').addEventListener('click',()=>{if(Date.now()-INV.lastDaily<20*3600e3)return;INV.lastDaily=Date.now();INV.credits+=600;INV.bag.clutch++;saveInv();audioInit();tone(990,.2,.2,'triangle');renderInv();});
 
 // cases
@@ -2735,60 +2753,91 @@ $('bItClose').addEventListener('click',()=>{$('itemOvl').hidden=true;renderInv()
 $('bItEquip').addEventListener('click',()=>{const s=SKINS[pvItem.skin];if(INV.equip[s.w]===pvItem.id)delete INV.equip[s.w];else INV.equip[s.w]=pvItem.id;saveInv();resetViewmodel();openItem(pvItem);});
 $('bItSell').addEventListener('click',()=>{const it=pvItem,s=SKINS[it.skin];INV.credits+=itemValue(it);INV.items=INV.items.filter(i=>i!==it);if(INV.equip[s.w]===it.id)delete INV.equip[s.w];
   saveInv();resetViewmodel();tone(600,.1,.15,'square');$('itemOvl').hidden=true;renderInv();});
-$('bItUp').addEventListener('click',()=>{UPG.mode='item';UPG.stake=pvItem;UPG.target=null;invTab='up';$('itemOvl').hidden=true;renderInv();});
 
-// upgrader
-const UPG={mode:'item',stake:null,cr:100,target:null,spinning:false,angle:0};
-function stakeValue(){return UPG.mode==='cr'?UPG.cr:UPG.stake?itemValue(UPG.stake):0;}
-function catalog(){const out=[];for(const s of Object.values(SKINS))for(const f of[.03,.1,.25])out.push({skin:s.id,float:f,st:false,kills:0});return out.sort((a,b)=>itemValue(a)-itemValue(b));}
+
+// upgrader: stake a skin and/or points, aim at a pricier skin, spin
+const UPG={stake:null,add:0,target:null,spinning:false,angle:0,sort:'asc'};
+function catalog(){const out=[];for(const s of Object.values(SKINS))for(const f of[.03,.1,.25,.42])out.push({skin:s.id,float:f,st:false,kills:0});return out.sort((a,b)=>itemValue(a)-itemValue(b));}
 const CATALOG=catalog();
+function stakeValue(){return(UPG.stake?itemValue(UPG.stake):0)+UPG.add;}
+function inMatch(){return G.state==='play'||G.state==='paused';}
+function upgraderOpenNow(){
+  if(!inMatch())return true;if(G.mode==='aim')return false;
+  if(isRounds())return G.phase==='freeze'||G.phase==='end'||G.rt<BUY_TIME;
+  if(G.mode==='horde')return G.waveState==='break';
+  return true;
+}
+function openUpgrader(stakeItem){
+  if(stakeItem)UPG.stake=stakeItem;UPG.target=null;$('upOvl').hidden=false;exitLock();renderUpgrader();
+}
+function closeUpgrader(){if(UPG.spinning)return;$('upOvl').hidden=true;if(inMatch()){if(desk()&&G.state==='play')requestLock();}else renderInv();}
 function renderUpgrader(){
-  document.querySelectorAll('#upMode button').forEach(b=>b.classList.toggle('sel',b.dataset.v===UPG.mode));
-  $('upCrRow').hidden=UPG.mode!=='cr';$('upPick').hidden=UPG.mode==='cr';
-  if(UPG.mode==='cr'){const max=Math.max(10,Math.min(INV.credits,20000));UPG.cr=clamp(UPG.cr,10,max);$('upCr').max=max;$('upCr').value=UPG.cr;$('rvUpCr').textContent=fmtCr(UPG.cr);}
+  $('upBal').textContent=fmtCr(INV.credits)+(inMatch()?' · closes when buy time ends':'');
   if(UPG.stake&&!INV.items.includes(UPG.stake))UPG.stake=null;
+  UPG.add=clamp(UPG.add,0,INV.credits);$('upAdd').max=Math.max(0,Math.floor(INV.credits/10)*10);$('upAdd').value=UPG.add;$('rvUpAdd').textContent=fmtCr(UPG.add);
   const st=$('upStake');st.innerHTML='';
-  if(UPG.mode==='cr')st.innerHTML=`<div class="crstake">${fmtCr(UPG.cr)}</div>`;else if(UPG.stake)st.appendChild(skinCard(UPG.stake,false));else st.innerHTML='<p class="desc">Pick a skin below</p>';
+  if(UPG.stake){const c=skinCard(UPG.stake,false);c.addEventListener('click',()=>{if(!UPG.spinning){UPG.stake=null;UPG.target=null;renderUpgrader();}});st.appendChild(c);}
+  if(UPG.add)st.insertAdjacentHTML('beforeend',`<div class="crstake">${UPG.stake?'+ ':''}${fmtCr(UPG.add)}</div>`);
+  if(!UPG.stake&&!UPG.add)st.innerHTML='<p class="desc">Tap one of your skins below, add points, or both</p>';
   const pk=$('upPick');pk.innerHTML='';
-  if(UPG.mode==='item')for(const it of INV.items.slice().sort((a,b)=>itemValue(a)-itemValue(b))){const c=skinCard(it,false,{sel:it===UPG.stake});c.addEventListener('click',()=>{if(UPG.spinning)return;UPG.stake=it;UPG.target=null;renderUpgrader();});pk.appendChild(c);}
-  if(UPG.mode==='item'&&!INV.items.length)pk.innerHTML='<p class="desc">No skins to stake. Switch to credits.</p>';
+  for(const it of INV.items.slice().sort((a,b)=>itemValue(a)-itemValue(b))){const c=skinCard(it,INV.equip[SKINS[it.skin].w]===it.id,{sel:it===UPG.stake});
+    c.addEventListener('click',()=>{if(UPG.spinning)return;UPG.stake=UPG.stake===it?null:it;UPG.target=null;renderUpgrader();});pk.appendChild(c);}
+  if(!INV.items.length)pk.innerHTML='<p class="desc">No skins yet. Stake points instead: you earn them for kills and at the end of every round.</p>';
   const sv=stakeValue(),tl=$('upTargets');tl.innerHTML='';
-  const opts=CATALOG.filter(t=>{const v=itemValue(t);return v>sv*1.05&&upgradeChance(sv,v)>=.01;}).slice(0,60);
+  let opts=CATALOG.filter(t=>{const v=itemValue(t);return sv&&v>sv*1.05&&upgradeChance(sv,v)>=.01;});
+  if(UPG.sort==='desc')opts=opts.slice().reverse();opts=opts.slice(0,72);
   if(UPG.target&&itemValue(UPG.target)<=sv)UPG.target=null;
-  for(const t of opts){const c=skinCard(t,false,{sel:UPG.target&&UPG.target.skin===t.skin&&UPG.target.float===t.float});c.addEventListener('click',()=>{if(UPG.spinning)return;UPG.target=t;renderUpgrader();});tl.appendChild(c);}
+  for(const t of opts){const c=skinCard(t,false,{sel:UPG.target&&UPG.target.skin===t.skin&&UPG.target.float===t.float});
+    c.insertAdjacentHTML('beforeend',`<span class="pct">${(upgradeChance(sv,itemValue(t))*100).toFixed(1)}%</span>`);
+    c.addEventListener('click',()=>{if(UPG.spinning)return;UPG.target=t;renderUpgrader();});tl.appendChild(c);}
   if(!sv)tl.innerHTML='<p class="desc">Choose a stake first.</p>';
   const tg=$('upTarget');tg.innerHTML='';if(UPG.target)tg.appendChild(skinCard(UPG.target,false));else tg.innerHTML='<p class="desc">Pick a target or a multiplier</p>';
-  const ch=sv&&UPG.target?upgradeChance(sv,itemValue(UPG.target)):0;
-  $('upChance').textContent=ch?`${(ch*100).toFixed(1)}%`:'—';$('bUpgrade').disabled=!ch||UPG.spinning;
+  const ch=sv&&UPG.target?upgradeChance(sv,itemValue(UPG.target)):0,open=upgraderOpenNow();
+  $('upChance').textContent=ch?`${(ch*100).toFixed(1)}%`:'—';$('bUpgrade').disabled=!ch||UPG.spinning||!open;
+  $('bUpgrade').textContent=open?'Upgrade':'Opens at buy time';
+  $('upStat').textContent=`${INV.upWins} won of ${INV.upgrades} upgrades`;
+  document.querySelectorAll('#upSort button').forEach(b=>b.classList.toggle('sel',b.dataset.v===UPG.sort));
   drawWheel(ch,UPG.angle);
 }
 function drawWheel(ch,ang){
-  const c=$('upWheel'),g=c.getContext('2d'),W=c.width,R=W/2-10;g.clearRect(0,0,W,W);
-  g.lineWidth=18;g.strokeStyle='rgba(239,233,220,.12)';g.beginPath();g.arc(W/2,W/2,R,0,TAU);g.stroke();
-  if(ch){g.strokeStyle='#6cc68a';g.shadowColor='#6cc68a';g.shadowBlur=10;g.beginPath();g.arc(W/2,W/2,R,-PI/2,-PI/2+ch*TAU);g.stroke();g.shadowBlur=0;}
-  g.save();g.translate(W/2,W/2);g.rotate(ang);g.fillStyle='#efe9dc';g.beginPath();g.moveTo(-6,0);g.lineTo(6,0);g.lineTo(0,-R+4);g.closePath();g.fill();
-  g.beginPath();g.arc(0,0,10,0,TAU);g.fill();g.restore();
+  const c=$('upWheel'),g=c.getContext('2d'),W=c.width,R=W/2-14;g.clearRect(0,0,W,W);
+  g.lineWidth=20;g.strokeStyle='rgba(239,233,220,.1)';g.beginPath();g.arc(W/2,W/2,R,0,TAU);g.stroke();
+  for(let i=0;i<60;i++){const a=i/60*TAU;g.strokeStyle='rgba(239,233,220,.18)';g.lineWidth=i%5?1:2;g.beginPath();g.moveTo(W/2+Math.cos(a)*(R-14),W/2+Math.sin(a)*(R-14));g.lineTo(W/2+Math.cos(a)*(R-20),W/2+Math.sin(a)*(R-20));g.stroke();}
+  if(ch){g.lineWidth=20;g.strokeStyle='#6cc68a';g.shadowColor='#6cc68a';g.shadowBlur=14;g.beginPath();g.arc(W/2,W/2,R,-PI/2,-PI/2+ch*TAU);g.stroke();g.shadowBlur=0;}
+  g.save();g.translate(W/2,W/2);g.rotate(ang);g.fillStyle='#efe9dc';g.beginPath();g.moveTo(-7,0);g.lineTo(7,0);g.lineTo(0,-R+2);g.closePath();g.fill();
+  g.beginPath();g.arc(0,0,11,0,TAU);g.fill();g.restore();
 }
-$('upMode').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b||UPG.spinning)return;UPG.mode=b.dataset.v;UPG.target=null;renderUpgrader();});
-$('upCr').addEventListener('input',e=>{UPG.cr=+e.target.value;UPG.target=null;renderUpgrader();});
+$('bUpClose').addEventListener('click',closeUpgrader);
+$('bItUp').addEventListener('click',()=>{$('itemOvl').hidden=true;openUpgrader(pvItem);});
+$('upAdd').addEventListener('input',e=>{if(UPG.spinning)return;UPG.add=+e.target.value;UPG.target=null;renderUpgrader();});
+$('upSort').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;UPG.sort=b.dataset.v;renderUpgrader();});
 $('upMult').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b||UPG.spinning)return;const sv=stakeValue();if(!sv)return;const want=sv*+b.dataset.m;
-  let best=null,bd=1e9;for(const t of CATALOG){const v=itemValue(t);if(v<=sv)continue;const d=Math.abs(Math.log(v/want));if(d<bd){bd=d;best=t;}}UPG.target=best;renderUpgrader();});
+  let best=null,bd=1e9;for(const t of CATALOG){const v=itemValue(t);if(v<=sv*1.05)continue;const d=Math.abs(Math.log(v/want));if(d<bd){bd=d;best=t;}}UPG.target=best;renderUpgrader();});
 $('bUpgrade').addEventListener('click',()=>{
-  const sv=stakeValue();if(!sv||!UPG.target||UPG.spinning)return;if(UPG.mode==='cr'&&INV.credits<UPG.cr)return;audioInit();
+  const sv=stakeValue();if(!sv||!UPG.target||UPG.spinning||!upgraderOpenNow())return;if(INV.credits<UPG.add)return;audioInit();
   const ch=upgradeChance(sv,itemValue(UPG.target)),landing=Math.random(),win=landing<ch;
-  // take the stake up front so closing the page mid-spin cannot dodge a loss
-  if(UPG.mode==='cr')INV.credits-=UPG.cr;else{const s=SKINS[UPG.stake.skin];INV.items=INV.items.filter(i=>i!==UPG.stake);if(INV.equip[s.w]===UPG.stake.id)delete INV.equip[s.w];}
-  let prize=null;if(win){prize=makeItem(UPG.target.skin,UPG.target.float);prize.st=false;INV.items.push(prize);INV.upWins++;}INV.upgrades++;saveInv();
+  // the stake is taken before the spin, so leaving mid-spin cannot dodge a loss
+  INV.credits-=UPG.add;if(UPG.stake){const s=SKINS[UPG.stake.skin];INV.items=INV.items.filter(i=>i!==UPG.stake);if(INV.equip[s.w]===UPG.stake.id)delete INV.equip[s.w];}
+  let prize=null;if(win){prize=makeItem(UPG.target.skin,UPG.target.float);prize.st=false;INV.items.push(prize);INV.equip[SKINS[prize.skin].w]=prize.id;INV.upWins++;}
+  INV.upgrades++;saveInv();resetViewmodel();
   UPG.spinning=true;$('bUpgrade').disabled=true;$('upMsg').textContent='Spinning…';
   const start=UPG.angle%TAU,end=TAU*6+landing*TAU,t0=performance.now(),dur=4200;let lastTick=0;
   const step=now=>{const k=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-k,4);UPG.angle=start+(end-start)*e;drawWheel(ch,UPG.angle);
-    const tk=Math.floor(UPG.angle/(TAU/36));if(tk!==lastTick){lastTick=tk;tone(1000,.02,.05,'square');}
-    if(k<1)requestAnimationFrame(step);else{UPG.spinning=false;
-      if(win){tone(1320,.35,.2,'triangle');setTimeout(()=>tone(1760,.45,.2,'triangle'),160);$('upMsg').innerHTML=`<span class="win">Upgraded!</span> You got ${skinTitle(prize)} worth ${fmtCr(itemValue(prize))}.`;UPG.stake=UPG.mode==='item'?prize:null;}
-      else{tone(180,.5,.25,'sawtooth');$('upMsg').innerHTML=`<span class="lose">Lost.</span> The needle stopped outside the green slice.`;UPG.stake=null;}
-      UPG.target=null;renderWallet();renderUpgrader();}};
+    const tk=Math.floor(UPG.angle/(TAU/40));if(tk!==lastTick){lastTick=tk;tone(1000,.02,.05,'square');}
+    if(k<1){requestAnimationFrame(step);return;}
+    UPG.spinning=false;
+    if(win){tone(1320,.35,.2,'triangle');setTimeout(()=>tone(1760,.45,.2,'triangle'),160);const s=SKINS[prize.skin];
+      let extra='';if(inMatch()&&G.player.alive&&s.w!=='knife'){give(G.player,s.w);extra=' The weapon is in your hands now.';}
+      $('upMsg').innerHTML=`<span class="win">Upgraded!</span> ${skinTitle(prize)} (${fmtCr(itemValue(prize))}) is equipped: ${ABIL[s.ab].name}.${extra}`;
+      if(inMatch())notice(`Upgraded: ${s.name}`,'#6cc68a');UPG.stake=prize;}
+    else{tone(180,.5,.25,'sawtooth');$('upMsg').innerHTML='<span class="lose">Lost.</span> The needle stopped outside the green arc.';UPG.stake=null;}
+    UPG.target=null;UPG.add=0;renderWallet();renderUpgrader();};
   requestAnimationFrame(step);
 });
+// points earned in matches
+function addPts(n,why){if(!G.player||n<=0)return;n=Math.round(n);INV.credits+=n;G.matchPts=(G.matchPts||0)+n;
+  const el=$('ptsPop');el.textContent=`+${n} PTS${why?' · '+why:''}`;el.classList.remove('on');void el.offsetWidth;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),1300);}
+$('bUpg').addEventListener('pointerdown',ev=>{ev.preventDefault();ev.stopPropagation();audioInit();$('upOvl').hidden?openUpgrader():closeUpgrader();});
 
 // ---------------- main update
 function update(dt){

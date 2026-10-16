@@ -138,7 +138,8 @@ function kill(v,src,wk,hs){
   if(src&&foe(src,v)&&src.isPlayer&&curKey(src)===wk){
     const bo=abil(src,'boom');if(bo){sfxBoom(v.x,v.z,false);boomLight.position.set(v.x,1.5,v.z);boomLight.intensity=3;for(let i=0;i<6;i++)puff(v.x+rnd(-1,1),rnd(.4,1.6),v.z+rnd(-1,1),i%2?0xffa040:0x6a6258,rnd(1,2),rnd(.4,.9),1.2,2.4);
       setTimeout(()=>{for(const o of G.ents)if(o.alive&&foe(src,o)&&d2(o,v)<4.5&&los(v.x,v.z,o.x,o.z))damage(o,src,'he',false,55*bo,null);},0);}
-    const bt=G.mode==='aim'?0:abil(src,'bounty');if(bt){src.money=Math.min(16000,src.money+Math.round(300*bt));const c=Math.round(25*bt);INV.credits+=c;G.bountyCr=(G.bountyCr||0)+c;}}
+    const bt=G.mode==='aim'?0:abil(src,'bounty');if(bt){src.money=Math.min(16000,src.money+Math.round(300*bt));addPts(25*bt,'bounty');}}
+  if(src===G.player&&foe(src,v))addPts(G.mode==='aim'?5:50+(hs?25:0),hs?'headshot':'kill');
   if(src&&foe(src,v)){src.k++;if(hs)src.hsk++;src.roundKills++;src.money=Math.min(16000,src.money+(WPN[wk]&&WPN[wk].reward||300));
     if(G.mode==='tdm')G.score[src.team]++;
     if(src===G.player){const n=src.roundKills;notice(n>=5&&!isDM()?'Ace!':STREAK[Math.min(n,4)]||(hs?'Headshot':''),n>=2?'':'#e5534b');if(n>=2)tone(520+n*90,.25,.2,'triangle');}}
@@ -149,7 +150,7 @@ function kill(v,src,wk,hs){
     fling(cl,v.x,eyeH(v)+.15,v.z,Math.cos(v.yaw+PI)*rnd(1,3)+rnd(-1,1),rnd(3,5),Math.sin(v.yaw+PI)*rnd(1,3)+rnd(-1,1),5);}
   if(!isDM()){for(const m of G.ents)if(m!==v&&m.alive&&!m.isPlayer&&!foe(m,v)&&!m.target&&src&&d2(m,v)<30&&Math.random()<.65*STYLE[S.style].hunt)m.hunt={x:src.x,z:src.z,until:G.clock+8};
     if(src&&!src.isPlayer&&src.team===G.player.team&&!ffaLike()&&Math.random()<.5)radio(src,pick(['Got him!','One down.','Enemy down.','Tagged and bagged.']));
-    if(v.team===G.player.team&&!v.isPlayer&&!ffaLike()){const left=alive(other(v.team)).length;if(left)setTimeout(()=>{const m=alive(v.team).find(x=>!x.isPlayer);if(m)radio(m,`${v.name} is down at ${locationName(v.x,v.z)||'their spot'}. ${left} left.`);},700);}}
+    if(v.team===G.player.team&&!v.isPlayer&&!ffaLike()){const left=alive(other(v.team)).length;if(left){const mid=G.matchId,rd=G.round;setTimeout(()=>{if(G.matchId!==mid||G.round!==rd)return;const m=alive(v.team).find(x=>!x.isPlayer);if(m)radio(m,`${v.name} is down at ${locationName(v.x,v.z)||'their spot'}. ${left} left.`);},700);}}}
   if(v.primary){dropWeapon(v,v.primary);v.primary=null;}
   if(G.bomb.state==='carried'&&G.bomb.carrier===v){G.bomb.state='dropped';G.bomb.x=v.x;G.bomb.z=v.z;G.bomb.carrier=null;if(v.team===G.player.team)showMsg('The bomb has been dropped',2);}
   if(v.model){const u=v.model.userData,from=src?Math.atan2(v.z-src.z,v.x-src.x):v.yaw+PI;const rel=angDiff(v.yaw,from);

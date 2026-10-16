@@ -1,5 +1,5 @@
 // ---------------- inventory, case shop, upgrader
-const fmtCr=n=>Math.round(n).toLocaleString('en-US')+' CR';
+const fmtCr=n=>Math.round(n).toLocaleString('en-US')+' PTS';
 const weaponLabel=s=>s.w==='knife'?'★ '+KNIFE_NAMES[s.kt]:WPN[s.w].name;
 function skinCard(it,eq,opts={}){
   const s=SKINS[it.skin],b=document.createElement('button');b.className='card'+(eq?' eq':'')+(opts.sel?' picked':'');b.style.setProperty('--rc',RARITY[s.r].col);
@@ -23,9 +23,8 @@ function renderInv(){
     if(!INV.items.length){g.innerHTML='<p class="desc">No skins yet. Open a case to get your first one.</p>';return;}
     for(const it of INV.items.slice().sort((a,b)=>itemValue(b)-itemValue(a))){const s=SKINS[it.skin],c=skinCard(it,INV.equip[s.w]===it.id);c.addEventListener('click',()=>openItem(it));g.appendChild(c);}}
   else if(invTab==='cases')renderCases();
-  else renderUpgrader();
 }
-$('invTabs').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;invTab=b.dataset.st;renderInv();});
+$('invTabs').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;if(b.dataset.st==='up'){openUpgrader();return;}invTab=b.dataset.st;renderInv();});
 $('bDaily').addEventListener('click',()=>{if(Date.now()-INV.lastDaily<20*3600e3)return;INV.lastDaily=Date.now();INV.credits+=600;INV.bag.clutch++;saveInv();audioInit();tone(990,.2,.2,'triangle');renderInv();});
 
 // cases
@@ -98,57 +97,88 @@ $('bItClose').addEventListener('click',()=>{$('itemOvl').hidden=true;renderInv()
 $('bItEquip').addEventListener('click',()=>{const s=SKINS[pvItem.skin];if(INV.equip[s.w]===pvItem.id)delete INV.equip[s.w];else INV.equip[s.w]=pvItem.id;saveInv();resetViewmodel();openItem(pvItem);});
 $('bItSell').addEventListener('click',()=>{const it=pvItem,s=SKINS[it.skin];INV.credits+=itemValue(it);INV.items=INV.items.filter(i=>i!==it);if(INV.equip[s.w]===it.id)delete INV.equip[s.w];
   saveInv();resetViewmodel();tone(600,.1,.15,'square');$('itemOvl').hidden=true;renderInv();});
-$('bItUp').addEventListener('click',()=>{UPG.mode='item';UPG.stake=pvItem;UPG.target=null;invTab='up';$('itemOvl').hidden=true;renderInv();});
 
-// upgrader
-const UPG={mode:'item',stake:null,cr:100,target:null,spinning:false,angle:0};
-function stakeValue(){return UPG.mode==='cr'?UPG.cr:UPG.stake?itemValue(UPG.stake):0;}
-function catalog(){const out=[];for(const s of Object.values(SKINS))for(const f of[.03,.1,.25])out.push({skin:s.id,float:f,st:false,kills:0});return out.sort((a,b)=>itemValue(a)-itemValue(b));}
+
+// upgrader: stake a skin and/or points, aim at a pricier skin, spin
+const UPG={stake:null,add:0,target:null,spinning:false,angle:0,sort:'asc'};
+function catalog(){const out=[];for(const s of Object.values(SKINS))for(const f of[.03,.1,.25,.42])out.push({skin:s.id,float:f,st:false,kills:0});return out.sort((a,b)=>itemValue(a)-itemValue(b));}
 const CATALOG=catalog();
+function stakeValue(){return(UPG.stake?itemValue(UPG.stake):0)+UPG.add;}
+function inMatch(){return G.state==='play'||G.state==='paused';}
+function upgraderOpenNow(){
+  if(!inMatch())return true;if(G.mode==='aim')return false;
+  if(isRounds())return G.phase==='freeze'||G.phase==='end'||G.rt<BUY_TIME;
+  if(G.mode==='horde')return G.waveState==='break';
+  return true;
+}
+function openUpgrader(stakeItem){
+  if(stakeItem)UPG.stake=stakeItem;UPG.target=null;$('upOvl').hidden=false;exitLock();renderUpgrader();
+}
+function closeUpgrader(){if(UPG.spinning)return;$('upOvl').hidden=true;if(inMatch()){if(desk()&&G.state==='play')requestLock();}else renderInv();}
 function renderUpgrader(){
-  document.querySelectorAll('#upMode button').forEach(b=>b.classList.toggle('sel',b.dataset.v===UPG.mode));
-  $('upCrRow').hidden=UPG.mode!=='cr';$('upPick').hidden=UPG.mode==='cr';
-  if(UPG.mode==='cr'){const max=Math.max(10,Math.min(INV.credits,20000));UPG.cr=clamp(UPG.cr,10,max);$('upCr').max=max;$('upCr').value=UPG.cr;$('rvUpCr').textContent=fmtCr(UPG.cr);}
+  $('upBal').textContent=fmtCr(INV.credits)+(inMatch()?' · closes when buy time ends':'');
   if(UPG.stake&&!INV.items.includes(UPG.stake))UPG.stake=null;
+  UPG.add=clamp(UPG.add,0,INV.credits);$('upAdd').max=Math.max(0,Math.floor(INV.credits/10)*10);$('upAdd').value=UPG.add;$('rvUpAdd').textContent=fmtCr(UPG.add);
   const st=$('upStake');st.innerHTML='';
-  if(UPG.mode==='cr')st.innerHTML=`<div class="crstake">${fmtCr(UPG.cr)}</div>`;else if(UPG.stake)st.appendChild(skinCard(UPG.stake,false));else st.innerHTML='<p class="desc">Pick a skin below</p>';
+  if(UPG.stake){const c=skinCard(UPG.stake,false);c.addEventListener('click',()=>{if(!UPG.spinning){UPG.stake=null;UPG.target=null;renderUpgrader();}});st.appendChild(c);}
+  if(UPG.add)st.insertAdjacentHTML('beforeend',`<div class="crstake">${UPG.stake?'+ ':''}${fmtCr(UPG.add)}</div>`);
+  if(!UPG.stake&&!UPG.add)st.innerHTML='<p class="desc">Tap one of your skins below, add points, or both</p>';
   const pk=$('upPick');pk.innerHTML='';
-  if(UPG.mode==='item')for(const it of INV.items.slice().sort((a,b)=>itemValue(a)-itemValue(b))){const c=skinCard(it,false,{sel:it===UPG.stake});c.addEventListener('click',()=>{if(UPG.spinning)return;UPG.stake=it;UPG.target=null;renderUpgrader();});pk.appendChild(c);}
-  if(UPG.mode==='item'&&!INV.items.length)pk.innerHTML='<p class="desc">No skins to stake. Switch to credits.</p>';
+  for(const it of INV.items.slice().sort((a,b)=>itemValue(a)-itemValue(b))){const c=skinCard(it,INV.equip[SKINS[it.skin].w]===it.id,{sel:it===UPG.stake});
+    c.addEventListener('click',()=>{if(UPG.spinning)return;UPG.stake=UPG.stake===it?null:it;UPG.target=null;renderUpgrader();});pk.appendChild(c);}
+  if(!INV.items.length)pk.innerHTML='<p class="desc">No skins yet. Stake points instead: you earn them for kills and at the end of every round.</p>';
   const sv=stakeValue(),tl=$('upTargets');tl.innerHTML='';
-  const opts=CATALOG.filter(t=>{const v=itemValue(t);return v>sv*1.05&&upgradeChance(sv,v)>=.01;}).slice(0,60);
+  let opts=CATALOG.filter(t=>{const v=itemValue(t);return sv&&v>sv*1.05&&upgradeChance(sv,v)>=.01;});
+  if(UPG.sort==='desc')opts=opts.slice().reverse();opts=opts.slice(0,72);
   if(UPG.target&&itemValue(UPG.target)<=sv)UPG.target=null;
-  for(const t of opts){const c=skinCard(t,false,{sel:UPG.target&&UPG.target.skin===t.skin&&UPG.target.float===t.float});c.addEventListener('click',()=>{if(UPG.spinning)return;UPG.target=t;renderUpgrader();});tl.appendChild(c);}
+  for(const t of opts){const c=skinCard(t,false,{sel:UPG.target&&UPG.target.skin===t.skin&&UPG.target.float===t.float});
+    c.insertAdjacentHTML('beforeend',`<span class="pct">${(upgradeChance(sv,itemValue(t))*100).toFixed(1)}%</span>`);
+    c.addEventListener('click',()=>{if(UPG.spinning)return;UPG.target=t;renderUpgrader();});tl.appendChild(c);}
   if(!sv)tl.innerHTML='<p class="desc">Choose a stake first.</p>';
   const tg=$('upTarget');tg.innerHTML='';if(UPG.target)tg.appendChild(skinCard(UPG.target,false));else tg.innerHTML='<p class="desc">Pick a target or a multiplier</p>';
-  const ch=sv&&UPG.target?upgradeChance(sv,itemValue(UPG.target)):0;
-  $('upChance').textContent=ch?`${(ch*100).toFixed(1)}%`:'—';$('bUpgrade').disabled=!ch||UPG.spinning;
+  const ch=sv&&UPG.target?upgradeChance(sv,itemValue(UPG.target)):0,open=upgraderOpenNow();
+  $('upChance').textContent=ch?`${(ch*100).toFixed(1)}%`:'—';$('bUpgrade').disabled=!ch||UPG.spinning||!open;
+  $('bUpgrade').textContent=open?'Upgrade':'Opens at buy time';
+  $('upStat').textContent=`${INV.upWins} won of ${INV.upgrades} upgrades`;
+  document.querySelectorAll('#upSort button').forEach(b=>b.classList.toggle('sel',b.dataset.v===UPG.sort));
   drawWheel(ch,UPG.angle);
 }
 function drawWheel(ch,ang){
-  const c=$('upWheel'),g=c.getContext('2d'),W=c.width,R=W/2-10;g.clearRect(0,0,W,W);
-  g.lineWidth=18;g.strokeStyle='rgba(239,233,220,.12)';g.beginPath();g.arc(W/2,W/2,R,0,TAU);g.stroke();
-  if(ch){g.strokeStyle='#6cc68a';g.shadowColor='#6cc68a';g.shadowBlur=10;g.beginPath();g.arc(W/2,W/2,R,-PI/2,-PI/2+ch*TAU);g.stroke();g.shadowBlur=0;}
-  g.save();g.translate(W/2,W/2);g.rotate(ang);g.fillStyle='#efe9dc';g.beginPath();g.moveTo(-6,0);g.lineTo(6,0);g.lineTo(0,-R+4);g.closePath();g.fill();
-  g.beginPath();g.arc(0,0,10,0,TAU);g.fill();g.restore();
+  const c=$('upWheel'),g=c.getContext('2d'),W=c.width,R=W/2-14;g.clearRect(0,0,W,W);
+  g.lineWidth=20;g.strokeStyle='rgba(239,233,220,.1)';g.beginPath();g.arc(W/2,W/2,R,0,TAU);g.stroke();
+  for(let i=0;i<60;i++){const a=i/60*TAU;g.strokeStyle='rgba(239,233,220,.18)';g.lineWidth=i%5?1:2;g.beginPath();g.moveTo(W/2+Math.cos(a)*(R-14),W/2+Math.sin(a)*(R-14));g.lineTo(W/2+Math.cos(a)*(R-20),W/2+Math.sin(a)*(R-20));g.stroke();}
+  if(ch){g.lineWidth=20;g.strokeStyle='#6cc68a';g.shadowColor='#6cc68a';g.shadowBlur=14;g.beginPath();g.arc(W/2,W/2,R,-PI/2,-PI/2+ch*TAU);g.stroke();g.shadowBlur=0;}
+  g.save();g.translate(W/2,W/2);g.rotate(ang);g.fillStyle='#efe9dc';g.beginPath();g.moveTo(-7,0);g.lineTo(7,0);g.lineTo(0,-R+2);g.closePath();g.fill();
+  g.beginPath();g.arc(0,0,11,0,TAU);g.fill();g.restore();
 }
-$('upMode').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b||UPG.spinning)return;UPG.mode=b.dataset.v;UPG.target=null;renderUpgrader();});
-$('upCr').addEventListener('input',e=>{UPG.cr=+e.target.value;UPG.target=null;renderUpgrader();});
+$('bUpClose').addEventListener('click',closeUpgrader);
+$('bItUp').addEventListener('click',()=>{$('itemOvl').hidden=true;openUpgrader(pvItem);});
+$('upAdd').addEventListener('input',e=>{if(UPG.spinning)return;UPG.add=+e.target.value;UPG.target=null;renderUpgrader();});
+$('upSort').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;UPG.sort=b.dataset.v;renderUpgrader();});
 $('upMult').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b||UPG.spinning)return;const sv=stakeValue();if(!sv)return;const want=sv*+b.dataset.m;
-  let best=null,bd=1e9;for(const t of CATALOG){const v=itemValue(t);if(v<=sv)continue;const d=Math.abs(Math.log(v/want));if(d<bd){bd=d;best=t;}}UPG.target=best;renderUpgrader();});
+  let best=null,bd=1e9;for(const t of CATALOG){const v=itemValue(t);if(v<=sv*1.05)continue;const d=Math.abs(Math.log(v/want));if(d<bd){bd=d;best=t;}}UPG.target=best;renderUpgrader();});
 $('bUpgrade').addEventListener('click',()=>{
-  const sv=stakeValue();if(!sv||!UPG.target||UPG.spinning)return;if(UPG.mode==='cr'&&INV.credits<UPG.cr)return;audioInit();
+  const sv=stakeValue();if(!sv||!UPG.target||UPG.spinning||!upgraderOpenNow())return;if(INV.credits<UPG.add)return;audioInit();
   const ch=upgradeChance(sv,itemValue(UPG.target)),landing=Math.random(),win=landing<ch;
-  // take the stake up front so closing the page mid-spin cannot dodge a loss
-  if(UPG.mode==='cr')INV.credits-=UPG.cr;else{const s=SKINS[UPG.stake.skin];INV.items=INV.items.filter(i=>i!==UPG.stake);if(INV.equip[s.w]===UPG.stake.id)delete INV.equip[s.w];}
-  let prize=null;if(win){prize=makeItem(UPG.target.skin,UPG.target.float);prize.st=false;INV.items.push(prize);INV.upWins++;}INV.upgrades++;saveInv();
+  // the stake is taken before the spin, so leaving mid-spin cannot dodge a loss
+  INV.credits-=UPG.add;if(UPG.stake){const s=SKINS[UPG.stake.skin];INV.items=INV.items.filter(i=>i!==UPG.stake);if(INV.equip[s.w]===UPG.stake.id)delete INV.equip[s.w];}
+  let prize=null;if(win){prize=makeItem(UPG.target.skin,UPG.target.float);prize.st=false;INV.items.push(prize);INV.equip[SKINS[prize.skin].w]=prize.id;INV.upWins++;}
+  INV.upgrades++;saveInv();resetViewmodel();
   UPG.spinning=true;$('bUpgrade').disabled=true;$('upMsg').textContent='Spinning…';
   const start=UPG.angle%TAU,end=TAU*6+landing*TAU,t0=performance.now(),dur=4200;let lastTick=0;
   const step=now=>{const k=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-k,4);UPG.angle=start+(end-start)*e;drawWheel(ch,UPG.angle);
-    const tk=Math.floor(UPG.angle/(TAU/36));if(tk!==lastTick){lastTick=tk;tone(1000,.02,.05,'square');}
-    if(k<1)requestAnimationFrame(step);else{UPG.spinning=false;
-      if(win){tone(1320,.35,.2,'triangle');setTimeout(()=>tone(1760,.45,.2,'triangle'),160);$('upMsg').innerHTML=`<span class="win">Upgraded!</span> You got ${skinTitle(prize)} worth ${fmtCr(itemValue(prize))}.`;UPG.stake=UPG.mode==='item'?prize:null;}
-      else{tone(180,.5,.25,'sawtooth');$('upMsg').innerHTML=`<span class="lose">Lost.</span> The needle stopped outside the green slice.`;UPG.stake=null;}
-      UPG.target=null;renderWallet();renderUpgrader();}};
+    const tk=Math.floor(UPG.angle/(TAU/40));if(tk!==lastTick){lastTick=tk;tone(1000,.02,.05,'square');}
+    if(k<1){requestAnimationFrame(step);return;}
+    UPG.spinning=false;
+    if(win){tone(1320,.35,.2,'triangle');setTimeout(()=>tone(1760,.45,.2,'triangle'),160);const s=SKINS[prize.skin];
+      let extra='';if(inMatch()&&G.player.alive&&s.w!=='knife'){give(G.player,s.w);extra=' The weapon is in your hands now.';}
+      $('upMsg').innerHTML=`<span class="win">Upgraded!</span> ${skinTitle(prize)} (${fmtCr(itemValue(prize))}) is equipped: ${ABIL[s.ab].name}.${extra}`;
+      if(inMatch())notice(`Upgraded: ${s.name}`,'#6cc68a');UPG.stake=prize;}
+    else{tone(180,.5,.25,'sawtooth');$('upMsg').innerHTML='<span class="lose">Lost.</span> The needle stopped outside the green arc.';UPG.stake=null;}
+    UPG.target=null;UPG.add=0;renderWallet();renderUpgrader();};
   requestAnimationFrame(step);
 });
+// points earned in matches
+function addPts(n,why){if(!G.player||n<=0)return;n=Math.round(n);INV.credits+=n;G.matchPts=(G.matchPts||0)+n;
+  const el=$('ptsPop');el.textContent=`+${n} PTS${why?' · '+why:''}`;el.classList.remove('on');void el.offsetWidth;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),1300);}
+$('bUpg').addEventListener('pointerdown',ev=>{ev.preventDefault();ev.stopPropagation();audioInit();$('upOvl').hidden?openUpgrader():closeUpgrader();});

@@ -37,7 +37,7 @@ function startMatch(){
   if(MAPID!==S.map)loadMap(S.map);
   buildWorld();
   {const hm=$('hitm');hm._t=0;hm.style.opacity=0;}
-  G.ents=[];nextId=1;G.mode=S.mode;G.clock=0;G.bomb={state:'none'};G.planted=false;G.lastCall=0;G.bountyCr=0;radioClear();
+  G.ents=[];nextId=1;G.mode=S.mode;G.clock=0;G.bomb={state:'none'};G.planted=false;G.lastCall=0;G.matchPts=0;G.matchId=(G.matchId||0)+1;radioClear();$('upOvl').hidden=true;UPG.spinning=false;
   G.drops.forEach(d=>scene.remove(d.mesh));G.drops=[];clearNades();SMOKES.length=0;resetPools();
   const names=shuffle(NAMES.slice()),side=S.side;
   const p=makeEnt('You',ffaLike()?pick(['T','CT']):side,true);G.player=p;G.ents.push(p);
@@ -104,7 +104,7 @@ function newRound(){
   for(const e of G.ents)if(e.team!=='T')e.lurk=false;
   $('banner').hidden=true;closeBuy();radioClear();
   showMsg(`Round ${G.round}`,2);
-  setTimeout(()=>{if(G.state!=='play'||G.phase==='end')return;const mates=G.ents.filter(e=>e.team===G.player.team&&!e.isPlayer);if(!mates.length)return;
+  const mid=G.matchId;setTimeout(()=>{if(G.state!=='play'||G.phase==='end'||G.matchId!==mid)return;const mates=G.ents.filter(e=>e.team===G.player.team&&!e.isPlayer);if(!mates.length)return;
     const m=pick(mates),eco=teamEco(m.team);
     if(m.team==='T')radio(m,eco==='eco'?`Eco round, save if it looks bad. Let's hit ${G.siteTarget}.`:`Let's go ${G.siteTarget}, stick together.`);
     else radio(m,eco==='eco'?'Saving this round, play for picks.':`I'll hold ${m.area==='M'?'mid':m.area}.`);},FREEZE*1000-1500);
@@ -141,6 +141,7 @@ function endRound(winner,reason){
   const mvp=G.ents.filter(e=>e.team===winner).sort((a,b)=>b.roundKills-a.roundKills)[0];
   $('bnM').textContent=(mvp&&mvp.roundKills?`MVP: ${mvp.name} · ${mvp.roundKills} kill${mvp.roundKills>1?'s':''} · `:'')+(G.mode==='defuse'?`You earned $${G.player.money-before}`:'');
   $('banner').hidden=false;
+  addPts(winner===G.player.team?200:100,winner===G.player.team?'round won':'round lost');if(mvp===G.player&&mvp.roundKills)setTimeout(()=>addPts(100,'MVP'),900);saveInv();
   tone(winner===G.player.team?660:220,.6,.25,'triangle');
   closeBuy();
 }
@@ -158,7 +159,7 @@ function checkDMEnd(){
   if(done)matchOver();
 }
 function matchOver(){
-  G.state='over';$('hud').hidden=true;exitLock();closeBuy();
+  G.state='over';$('hud').hidden=true;exitLock();closeBuy();if(!UPG.spinning)$('upOvl').hidden=true;
   let title;
   if(ffaLike()){const l=dmLeader();title=l===G.player?'Victory <small>You topped the board</small>':`Defeat <small>${l.name} won with ${l.k}</small>`;}
   else{const win=G.score.T>G.score.CT?'T':G.score.CT>G.score.T?'CT':null,me=win===G.player.team;
@@ -169,7 +170,7 @@ function matchOver(){
   if(G.mode==='arms'){const w=G.arWinner||G.ents.slice().sort((a,b)=>b.arLevel-a.arLevel)[0];title=w===G.player?'Victory <small>Golden knife kill</small>':`Defeat <small>${w.name} finished the ladder</small>`;}
   const p=G.player,won=G.mode==='horde'?G.wave>=5:G.mode==='aim'?G.aimScore>=2000:G.mode==='arms'?(G.arWinner===p):ffaLike()?dmLeader()===p:G.score[p.team]>G.score[other(p.team)];
   const rw=awardMatch(won,p);
-  $('overT').innerHTML=title;$('overBoard').innerHTML=`<p class="reward">+${rw.xp} XP · +${fmtCr(rw.cr+(G.bountyCr||0))} · +1 Clutch Case${rw.rankUp?` · Ranked up to <b>${rw.rank}</b> (bonus case)`:''}</p>`+boardHTML();$('over').hidden=false;
+  $('overT').innerHTML=title;$('overBoard').innerHTML=`<p class="reward">+${rw.xp} XP · +${fmtCr(G.matchPts||0)} earned in match · +${fmtCr(rw.cr)} match bonus · +1 Clutch Case${rw.rankUp?` · Ranked up to <b>${rw.rank}</b> (bonus case)`:''}</p>`+boardHTML();$('over').hidden=false;
 }
 
 // ---------------- economy

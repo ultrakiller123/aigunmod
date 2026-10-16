@@ -46,7 +46,7 @@ const ABIL={
   boom:{name:'Explosive Rounds',desc:'Kills detonate and hurt nearby enemies'},burn:{name:'Incendiary Rounds',desc:'Hits set the ground on fire under the target'},
   mag:{name:'Extended Mag',desc:'Bigger magazine'},fleet:{name:'Fleet Foot',desc:'Move faster while held'},
   exec:{name:'Executioner',desc:'Extra damage to wounded enemies'},pierce:{name:'Armor Piercing',desc:'Ignore armor and punch through walls'},
-  bounty:{name:'Bounty Hunter',desc:'Bonus money and credits per kill'},crit:{name:'Lucky Shot',desc:'Chance to deal double damage'},
+  bounty:{name:'Bounty Hunter',desc:'Bonus money and points per kill'},crit:{name:'Lucky Shot',desc:'Chance to deal double damage'},
   frost:{name:'Frost Rounds',desc:'Hits slow enemies to a crawl'},ghost:{name:'Ghost',desc:'Silent footsteps while held'},
   second:{name:'Second Wind',desc:'Once per life, survive a lethal hit'},chain:{name:'Chain Lightning',desc:'Hits arc to a second enemy'},
   recoil:{name:'Recoil Dampener',desc:'Much less spray climb'},eagle:{name:'Eagle Eye',desc:'Enemies you hit stay on your radar'},
